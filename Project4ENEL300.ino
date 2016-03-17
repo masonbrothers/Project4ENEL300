@@ -15,24 +15,31 @@ Servo servoRight;
 
 void setup() {
   // put your setup code here, to run once:
-  int startingTime, leaveStartZoneTime, edgeOneTime, findCupTime, boardLengthTime;
+  Serial.begin(9600);
+  int leaveStartZoneTime, edgeOneTime, findCupTime, boardLengthTime;
+  int totalStartingTime;
   attachMotors();
-  startingTime = millis();
+  
+  delay(1000);
+  totalStartingTime = millis();
   startServosForward();
   while (!wiskerFrontSensorDetect());
-  
+  leaveStartZoneTime = getTimeSince(totalStartingTime);
   stopServos();
+  delay(500);
   startServosBackward(); //Prevents the robot from hitting the board.
-  delay(100);
+  delay(500);
+  stopServos();
+  delay(1000);
   turnLeft();
   startServosForward();
   while (irRightSensorDetect());
-  delay(300); //Continue Driving forward a bit
+  delay(1000); //Continue Driving forward a bit
   turnRight();
   startServosForward();
-  delay(500); //Get to the other side of the 
+  delay(3000); //Get to the other side of the 
   turnRight();
-  //START 
+  //START */
 }
 
 void loop() {
@@ -58,7 +65,7 @@ void startServosForward()
 
 void startServosBackward()
 {
-  setServos(-100, 100);
+  setServos(-100, -100);
 }
 
 int getTimeSince(int input) //In milliseconds
@@ -66,27 +73,17 @@ int getTimeSince(int input) //In milliseconds
   return millis() - input;
 }
 
-boolean detectedInFront()
-{
-  
-}
-
-boolean detectedOnRight()
-{
-  
-}
-
 void turnLeft()
 {
   startTurningLeft();
-  delay(1000);
+  delay(700);
   stopServos();
 }
 
 void turnRight()
 {
   startTurningRight();
-  delay(1000);
+  delay(700);
   stopServos();
 }
 void startTurningLeft()
