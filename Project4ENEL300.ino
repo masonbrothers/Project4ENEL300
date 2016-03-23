@@ -165,4 +165,24 @@ int irDetect(int irLedPin, int irReceiverPin, long frequency)
   return ir;                                 // Return 1 no detect, 0 detect
 }  
 
+void zigZagMason()
+{
+  while(1)
+  {
+    if (interrupt()) break;
+    if (irRightSensor())
+    {
+      setServos(25, 50);
+    }
+    else
+    {
+      setServos(50,25);
+    }
+    delay(10);
+  }
+}
 
+bool interrupt()
+{
+  
+}
