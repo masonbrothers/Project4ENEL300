@@ -26,21 +26,32 @@ void setup() {
   delay(1000);
   #ifdef TESTING
   int i;
+  for (i = 0; i < 4; i++)
+  {
+    turnPivotRight();
+    delay(500);
+  }
+  for (i = 0; i < 4; i++)
+  {
+    turnPivotLeft();
+    delay(500);
+  }
+  
   /*
   for (i = 0; i < 4; i++)
   {
-    turnRight();
+    turnDimeRight();
     delay(500);
   }
   */
   /*
   for (i = 0; i < 4; i++)
   {
-    turnLeft();
+    turnDimeLeft();
     delay(500);
   }
   */
-
+  /*
   startServosForward();
   delay(1000);
   while (!irFrontSensorDetect());
@@ -49,7 +60,7 @@ void setup() {
   
   //Cup has been detected
   avoidObstacle();
-  
+  */
   while (1)
   {
     Serial.print("Right: ");
@@ -73,16 +84,17 @@ void setup() {
   delay(500);
   stopServos();
   delay(1000);
-  turnLeft();
+  turnDimeLeft();
   startServosForward();
   while (irRightSensorDetect());
   delay(1000); //Continue Driving forward a bit
-  turnRight();
+  turnDimeRight();
   startServosForward();
   delay(2000); //Get to the other side of the 
-  turnRight();
+  turnDimeRight();
   startServosForward();
   delay(1000);
+  
   while (!irFrontSensorDetect());
   stopServos();
   delay(500);
@@ -96,17 +108,19 @@ void setup() {
 
 void avoidObstacle()
 {
-  int boxSize = 1000;
-  turnLeft();
+  int boxSize = 2000;
+  startServosBackward();
+  delay(boxSize/2);
+  turnPivotLeft();
   startServosForward();
   delay(boxSize);
-  turnRight();
+  turnPivotRight();
   startServosForward();
   delay(boxSize);
-  turnRight();
+  turnPivotRight();
   startServosForward();
   delay(boxSize);
-  turnLeft();
+  turnPivotLeft();
 }
 
 void loop() {
@@ -140,25 +154,50 @@ int getTimeSince(int input) //In milliseconds
   return millis() - input;
 }
 
-void turnLeft()
+void turnDimeLeft()
 {
-  startTurningLeft();
+  startDimeTurningLeft();
   delay(620);
   stopServos();
 }
 
-void turnRight()
+void turnPivotLeft()
 {
-  startTurningRight();
+  startPivotTurningLeft();
+  delay(1275);
+  stopServos();
+}
+
+void startPivotTurningLeft()
+{
+  setServos(0, 100);
+}
+
+void turnDimeRight()
+{
+  startDimeTurningRight();
   delay(650);
   stopServos();
 }
-void startTurningLeft()
+void startDimeTurningLeft()
 {
   setServos(-100, 100);
 }
 
-void startTurningRight()
+void turnPivotRight()
+{
+  startPivotTurningRight();
+  delay(1275);
+  stopServos();
+}
+
+void startPivotTurningRight()
+{
+  setServos(100, 0);
+}
+
+
+void startDimeTurningRight()
 {
   setServos(100, -100);
 }
