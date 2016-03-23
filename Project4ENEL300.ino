@@ -7,23 +7,65 @@
 #define RIGHT_LED_PIN 3
 #define RIGHT_RECEIVER_PIN 4
 #define BUZZER_PIN 2
-#define WISKER_PIN 8
-
+#define WHISKER_PIN 8
+#define TESTING
 
 Servo servoLeft;
 Servo servoRight;
 
+double allignment = 0.89;  //Higher values make left motor stronger (makes it veer right)
+                           //Lower values make right motor stronger (makes it veer left)
+
 void setup() {
   // put your setup code here, to run once:
+  //STARTUP
   Serial.begin(9600);
   int leaveStartZoneTime, edgeOneTime, findCupTime, boardLengthTime;
   int totalStartingTime;
   attachMotors();
-  
   delay(1000);
+  #ifdef TESTING
+  int i;
+  /*
+  for (i = 0; i < 4; i++)
+  {
+    turnRight();
+    delay(500);
+  }
+  */
+  /*
+  for (i = 0; i < 4; i++)
+  {
+    turnLeft();
+    delay(500);
+  }
+  */
+
+  startServosForward();
+  delay(1000);
+  while (!irFrontSensorDetect());
+  stopServos();
+  delay(500);
+  
+  //Cup has been detected
+  avoidObstacle();
+  
+  while (1)
+  {
+    Serial.print("Right: ");
+    Serial.print(irRightSensorDetect());
+    Serial.print("\tFront: ");
+    Serial.print(irFrontSensorDetect());
+    Serial.print("\tWhisker: ");
+    Serial.print(whiskerFrontSensorDetect());
+    Serial.print("\n");
+  }
+  #endif
+  
+  #ifndef TESTING
   totalStartingTime = millis();
   startServosForward();
-  while (!wiskerFrontSensorDetect());
+  while (!whiskerFrontSensorDetect());
   leaveStartZoneTime = getTimeSince(totalStartingTime);
   stopServos();
   delay(500);
@@ -37,9 +79,34 @@ void setup() {
   delay(1000); //Continue Driving forward a bit
   turnRight();
   startServosForward();
-  delay(3000); //Get to the other side of the 
+  delay(2000); //Get to the other side of the 
   turnRight();
-  //START */
+  startServosForward();
+  delay(1000);
+  while (!irFrontSensorDetect());
+  stopServos();
+  delay(500);
+  
+  //Cup has been detected
+  avoidObstacle();
+  //START
+  #endif
+  
+}
+
+void avoidObstacle()
+{
+  int boxSize = 1000;
+  turnLeft();
+  startServosForward();
+  delay(boxSize);
+  turnRight();
+  startServosForward();
+  delay(boxSize);
+  turnRight();
+  startServosForward();
+  delay(boxSize);
+  turnLeft();
 }
 
 void loop() {
@@ -76,14 +143,14 @@ int getTimeSince(int input) //In milliseconds
 void turnLeft()
 {
   startTurningLeft();
-  delay(700);
+  delay(620);
   stopServos();
 }
 
 void turnRight()
 {
   startTurningRight();
-  delay(700);
+  delay(650);
   stopServos();
 }
 void startTurningLeft()
@@ -104,8 +171,8 @@ void startTurningRight()
   
 void setServos(int left, int right) //Convention is Positive numbers for forward
 {
-  servoLeft.writeMicroseconds(1500+left); // Positive for forward, negative for backward
-  servoRight.writeMicroseconds(1500-right); // Negative for forward, positive for backward
+  servoLeft.writeMicroseconds(1500+(double)left*allignment); // Positive for forward, negative for backward
+  servoRight.writeMicroseconds(1500-(double)right/allignment); // Negative for forward, positive for backward
 }
 
 void beepTwoTimes()
@@ -128,9 +195,9 @@ void beepFiveTimes()
   }
 }
 
-boolean wiskerFrontSensorDetect()
+boolean whiskerFrontSensorDetect()
 {
-  return !digitalRead(WISKER_PIN); //When the pin goes low, the wisker has touched.
+  return !digitalRead(WHISKER_PIN); //When the pin goes low, the whisker has touched.
 }
 
 boolean irFrontSensorDetect()
@@ -170,7 +237,7 @@ void zigZagMason()
   while(1)
   {
     if (interrupt()) break;
-    if (irRightSensor())
+    if (irRightSensorDetect())
     {
       setServos(25, 50);
     }
@@ -184,5 +251,6 @@ void zigZagMason()
 
 bool interrupt()
 {
-  
+  irRightSensorDetect();
+  setServos(0,0);
 }
