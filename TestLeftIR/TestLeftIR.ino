@@ -17,14 +17,14 @@ void setup()                                 // Built-in initialization block
   tone(2, 38000, 8);                       // Play tone for 1 second
   delay(1000);                               // Delay to finish tone
 
-  pinMode(4, INPUT);  pinMode(3, OUTPUT);   // Left IR LED & Receiver
+  pinMode(13, INPUT);  pinMode(5, OUTPUT);   // Left IR LED & Receiver
 
   Serial.begin(9600);                        // Set data rate to 9600 bps
 }  
  
 void loop()                                  // Main loop auto-repeats
 {
-  int irLeft = irDetect(3, 4, 38000);       // Check for object
+  int irLeft = irDetect(5, 13, 38000);       // Check for object
   digitalWrite(ledout, LOW);
 if(irLeft==1)
 {
