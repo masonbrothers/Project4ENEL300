@@ -10,10 +10,12 @@
 #define WHISKER_PIN 8
 #define VISIBLE_LED_PIN 12
 
-#define RIGHT_DIME_TURNING_TIME 650   // CALIBRATION TEST 1
+#define RIGHT_DIME_TURNING_TIME 610   // CALIBRATION TEST 1
 #define LEFT_DIME_TURNING_TIME 630    // CALIBRATION TEST 2
-#define RIGHT_PIVOT_TURNING_TIME 1275 // CALIBRATION TEST 3
-#define LEFT_PIVOT_TURNING_TIME 1250  // CALIBRATION TEST 4
+
+
+#define RIGHT_PIVOT_TURNING_TIME 1260 // CALIBRATION TEST 3
+#define LEFT_PIVOT_TURNING_TIME 1240  // CALIBRATION TEST 4
 #define BOX_SIZE 2000
 #define IR_DELAY_TIME 10
 
@@ -31,13 +33,13 @@ void calibration()
   int i;
   for (i = 0; i < 4; i++) // CALIBRATION TEST 1
   {
-    turnDimeRight();
+    turnPivotRight();
     delay(1000);
   }
   delay(3000);
   for (i = 0; i < 4; i++) // CALIBRATION TEST 2
   {
-    turnDimeLeft();
+    turnPivotLeft();
     delay(1000);
   }
   /*
@@ -84,8 +86,8 @@ void setup() {
   //Cup has been detected
   avoidObstacle();
   */
-  calibration();
-  
+  //calibration();
+  tryToHitTheBoard();
   while (1)
   {
     Serial.print("Right: ");
@@ -115,10 +117,10 @@ void setup() {
   stopServos();
   delay(500);
   startServosBackward(); // Prevents the robot from hitting the board.
-  delay(500);
+  delay(800);
   stopServos();
   delay(1000);
-  turnDimeLeft();        // Turns left fast
+  turnPivotLeft();        // Turns left fast
   Serial.println("Going Forward");
   startServosForward();
   hitBoardTime = millis();
@@ -149,6 +151,7 @@ void setup() {
       delay(IR_DELAY_TIME);
   }  // While board is there keep going forward      // While board is there keep going forward
   turnCorner();
+  tryToHitTheBoard(); // MASON FLAG
   startServosForward();
   startMeasuringWallTime = millis();
   while (irRightSensorDetect())
@@ -181,6 +184,7 @@ void setup() {
         delay(IR_DELAY_TIME);
     }  // While board is there keep going forward
     turnCorner();
+    tryToHitTheBoard(); // MASON FLAG
     startServosForward(); 
     lastMeasuringWallTime = millis();
     while(1)
@@ -208,31 +212,37 @@ void turnCorner()
 {
   startServosForward();
   delay(1000); //Continue Driving forward a bit
-  turnDimeRight();
+  turnPivotRight();
   startServosForward();
-  delay(2500); //Get to the other side of the board
-  turnDimeRight();    
+  delay(1500); //Get to the other side of the board
+  turnPivotRight();    
   startServosForward();
   delay(1500); // Drive forward so that the sensor will see the board.
 }
 
 void avoidObstacle()
 {
+  startServosBackward();
+  delay(300);
   turnPivotLeft();
   startServosForward();
   delay(BOX_SIZE/2);
   turnPivotRight();
   startServosForward();
   delay(BOX_SIZE);
+  tryToHitTheBoard();
+}
+
+void tryToHitTheBoard()
+{
   turnPivotRight();
   startServosForward();
   while (!whiskerFrontSensorDetect());
   stopServos();
   startServosBackward(); // Prevents the robot from hitting the board.
-  delay(500);
+  delay(1000);
   stopServos();
-  //delay(BOX_SIZE);
-  turnDimeLeft();
+  turnPivotLeft();
 }
 
 void loop() {
