@@ -9,13 +9,13 @@
 #define BUZZER_PIN 9
 #define WHISKER_PIN 8
 
-#define LEFT_DIME_TURNING_TIME 620
+#define LEFT_DIME_TURNING_TIME 640
 #define RIGHT_DIME_TURNING_TIME 650
 #define LEFT_PIVOT_TURNING_TIME 1250
 #define RIGHT_PIVOT_TURNING_TIME 1275
 #define BOX_SIZE 2000
 
-#define TESTING
+//#define TESTING
 
 Servo servoLeft;
 Servo servoRight;
@@ -28,8 +28,8 @@ void setup() {
   //STARTUP
 
   Serial.begin(9600);      // Initilizes serial out. This is used for debugging.
-  int deltaLeaveStartZoneTime, deltaEdgeOneTime, deltaFindCupTime, deltaBoardLengthTime;
-  int totalStartingTime;
+  int deltaLeaveStartZoneTime, deltaTimeToFirstCorner, deltaFindCupTime, deltaBoardLengthTime;
+  int startingTime, roundedFirstCornerTime, hitBoardTime, startMeasuringWallTime, roundedThirdCornerTime, lastMeasuringWallTime, lastStretchTime;
   attachMotors();
   delay(1000);             // Gives a bit of time for us to position the robot before it starts moving
  
@@ -88,36 +88,95 @@ void setup() {
   #endif
   
   #ifndef TESTING
-  totalStartingTime = millis();
-  startServosForward();
-  while (!whiskerFrontSensorDetect());
-  deltaleaveStartZoneTime = getTimeSince(totalStartingTime);
-  stopServos();
-  delay(500);
-  startServosBackward(); //Prevents the robot from hitting the board.
-  delay(500);
-  stopServos();
-  delay(1000);
-  turnDimeLeft();
-  startServosForward();
-  while (irRightSensorDetect());
-  delay(1000); //Continue Driving forward a bit
-  turnDimeRight();
-  startServosForward();
-  delay(2000); //Get to the other side of the 
-  turnDimeRight();
-  startServosForward();
-  delay(1000);
   
+  startingTime = millis();          //Time at the begining of the test
+  startServosForward();
+  while (!whiskerFrontSensorDetect());    //Continue until whisker is triggered
+  deltaLeaveStartZoneTime = getTimeSince(startingTime); //Get the change in time between starting to move and touching the wall 
+  stopServos();
+  delay(500);
+  startServosBackward(); // Prevents the robot from hitting the board.
+  delay(500);
+  stopServos();
+  delay(1000);
+  turnDimeLeft();        // Turns left fast
+  startServosForward();
+  hitBoardTime = millis();
+  while (irRightSensorDetect());        // While board is there keep going forward
+  
+  //Turns around board
+  deltaTimeToFirstCorner = getTimeSince(hitBoardTime);
+  turnCorner();
+  roundedFirstCornerTime = millis();
+  
+  startServosForward();
   while (!irFrontSensorDetect());
+  deltaFindCupTime = getTimeSince(roundedFirstCornerTime);
   stopServos();
   delay(500);
   
   //Cup has been detected
-  avoidObstacle();
+  avoidObstacle();     // Avoids obstacle and sets rover parallel to board.
+  startServosForward(); 
+  while (irRightSensorDetect());        // While board is there keep going forward
+  turnCorner();
+  startServosForward(); 
+  startMeasuringWallTime = millis();
+  while (irRightSensorDetect());
+  deltaBoardLengthTime = getTimeSince(startMeasuringWallTime);
+  turnCorner();
+  roundedThirdCornerTime = millis();
+  bool cupFound = true;
+  while(!irFrontSensorDetect())
+  {
+    if (deltaFindCupTime + 1000 < getTimeSince(roundedThirdCornerTime)) // the cup is not there
+    {
+      stopServos();
+      beepFiveTimes();
+      cupFound = false;
+    }
+    
+  }
+  if (cupFound)
+  {
+    stopServos();
+    beepTwoTimes();
+    avoidObstacle();
+    startServosForward(); 
+    while (irRightSensorDetect());        // While board is there keep going forward
+    turnCorner();
+    startServosForward(); 
+    lastMeasuringWallTime = millis();
+    while(1)
+    {
+      if (deltaBoardLengthTime-deltaTimeToFirstCorner < getTimeSince(lastMeasuringWallTime))
+        break;
+    }
+    stopServos();
+    turnPivotLeft();
+    lastStretchTime = millis();
+    while(1)
+    {
+      if (deltaLeaveStartZoneTime < getTimeSince(lastStretchTime))
+        break;
+    }
+    stopServos();
+  }
   //START
   #endif
   
+}
+
+void turnCorner()
+{
+  startServosForward();
+  delay(1000); //Continue Driving forward a bit
+  turnDimeRight();
+  startServosForward();
+  delay(2000); //Get to the other side of the 
+  turnDimeRight();    
+  startServosForward();
+  delay(1500); // Drive forward so that the sensor will see the board.
 }
 
 void avoidObstacle()
@@ -132,8 +191,13 @@ void avoidObstacle()
   delay(BOX_SIZE);
   turnPivotRight();
   startServosForward();
-  delay(BOX_SIZE);
-  turnPivotLeft();
+  while (!whiskerFrontSensorDetect());
+  stopServos();
+  startServosBackward(); // Prevents the robot from hitting the board.
+  delay(500);
+  stopServos();
+  //delay(BOX_SIZE);
+  turnDimeLeft();
 }
 
 void loop() {
