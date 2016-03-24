@@ -8,6 +8,13 @@
 #define RIGHT_RECEIVER_PIN 4
 #define BUZZER_PIN 2
 #define WHISKER_PIN 8
+
+#define LEFT_DIME_TURNING_TIME 620
+#define RIGHT_DIME_TURNING_TIME 650
+#define LEFT_PIVOT_TURNING_TIME 1275
+#define RIGHT_PIVOT_TURNING_TIME 1275
+#define BOX_SIZE 2000
+
 #define TESTING
 
 Servo servoLeft;
@@ -108,18 +115,17 @@ void setup() {
 
 void avoidObstacle()
 {
-  int boxSize = 2000;
   startServosBackward();
-  delay(boxSize/2);
+  delay(BOX_SIZE/2);
   turnPivotLeft();
   startServosForward();
-  delay(boxSize);
+  delay(BOX_SIZE);
   turnPivotRight();
   startServosForward();
-  delay(boxSize);
+  delay(BOX_SIZE);
   turnPivotRight();
   startServosForward();
-  delay(boxSize);
+  delay(BOX_SIZE);
   turnPivotLeft();
 }
 
@@ -157,14 +163,14 @@ int getTimeSince(int input) //In milliseconds
 void turnDimeLeft()
 {
   startDimeTurningLeft();
-  delay(620);
+  delay(LEFT_DIME_TURNING_TIME);
   stopServos();
 }
 
 void turnPivotLeft()
 {
   startPivotTurningLeft();
-  delay(1275);
+  delay(LEFT_PIVOT_TURNING_TIME);
   stopServos();
 }
 
@@ -176,7 +182,7 @@ void startPivotTurningLeft()
 void turnDimeRight()
 {
   startDimeTurningRight();
-  delay(650);
+  delay(RIGHT_DIME_TURNING_TIME);
   stopServos();
 }
 void startDimeTurningLeft()
@@ -187,7 +193,7 @@ void startDimeTurningLeft()
 void turnPivotRight()
 {
   startPivotTurningRight();
-  delay(1275);
+  delay(1275 RIGHT_PIVOT_TURNING_TIME);
   stopServos();
 }
 
@@ -290,6 +296,6 @@ void zigZagMason()
 
 bool interrupt()
 {
-  irRightSensorDetect();
+  return irFrontSensorDetect();
   setServos(0,0);
 }
