@@ -1,6 +1,6 @@
 #include <Servo.h>
 
-#define LEFT_SERVO_PIN 11//
+#define LEFT_SERVO_PIN 11
 #define RIGHT_SERVO_PIN 10
 #define FRONT_LED_PIN 5
 #define FRONT_RECEIVER_PIN 13
@@ -8,6 +8,8 @@
 #define RIGHT_RECEIVER_PIN 4
 #define BUZZER_PIN 9
 #define WHISKER_PIN 8
+#define WHISKER_LEFT_PIN 8
+#define WHISKER_RIGHT_PIN 2
 #define VISIBLE_LED_PIN 12
 
 #define RIGHT_DIME_TURNING_TIME 610   // CALIBRATION TEST 1
@@ -19,7 +21,7 @@
 #define BOX_SIZE 2000
 #define IR_DELAY_TIME 10
 
-//#define TESTING
+#define TESTING
 
 Servo servoLeft;
 Servo servoRight;
@@ -90,12 +92,14 @@ void setup() {
   tryToHitTheBoard();
   while (1)
   {
-    Serial.print("Right: ");
+    Serial.print("RightIR: ");
     Serial.print(irRightSensorDetect());
-    Serial.print("\tFront: ");
+    Serial.print("\tFrontIR: ");
     Serial.print(irFrontSensorDetect());
-    Serial.print("\tWhisker: ");
-    Serial.print(whiskerFrontSensorDetect());
+    Serial.print("\tLeftWh: ");
+    Serial.print(whiskerLeftSensorDetect());
+    Serial.print("\tRightWh: ");
+    Serial.print(whiskerRightSensorDetect());
     Serial.print("\n");
     if (irRightSensorDetect())
     {
@@ -235,10 +239,39 @@ void avoidObstacle()
 
 void tryToHitTheBoard()
 {
-  turnPivotRight();
-  startServosForward();
-  while (!whiskerFrontSensorDetect());
+  //turnPivotRight();
+  setServos(20,20);
+  while ((!whiskerLeftSensorDetect())&&(!whiskerRightSensorDetect()));
   stopServos();
+  while(1)
+  {
+    bool left = whiskerLeftSensorDetect();
+    bool right = whiskerRightSensorDetect();
+    if (left&&right)
+      break;
+    else if (left)
+    {
+      setServos(-20,-20);
+      delay(300);
+      setServos(-20,20);
+      delay(200);
+      setServos(20,20);
+      delay(300);
+    }
+    else if (right)
+    {
+      setServos(-20,-20);
+      delay(300);
+      setServos(20,-20);
+      delay(200);
+      setServos(20,20);
+      delay(300);
+    }
+    
+    
+    if (whiskerLeftSensorDetect()&&whiskerRightSensorDetect())
+      break;
+  }
   startServosBackward(); // Prevents the robot from hitting the board.
   delay(1000);
   stopServos();
@@ -361,6 +394,16 @@ void beepFiveTimes()
 boolean whiskerFrontSensorDetect()
 {
   return !digitalRead(WHISKER_PIN); //When the pin goes low, the whisker has touched.
+}
+
+boolean whiskerLeftSensorDetect()
+{
+  return !digitalRead(WHISKER_LEFT_PIN); //When the pin goes low, the whisker has touched.
+}
+
+boolean whiskerRightSensorDetect()
+{
+  return !digitalRead(WHISKER_RIGHT_PIN); //When the pin goes low, the whisker has touched.
 }
 
 boolean irFrontSensorDetect()
