@@ -180,7 +180,7 @@ void setup() {
     lastMeasuringWallTime = millis();
     while(1)
     {
-      if (deltaBoardLengthTime-deltaTimeToFirstCorner < getTimeSince(lastMeasuringWallTime))
+      if (deltaBoardLengthTime - deltaTimeToFirstCorner < getTimeSince(lastMeasuringWallTime))
         break;
     }
     stopServos();
@@ -213,13 +213,13 @@ void turnCorner()
 void avoidObstacle()
 {
   startServosBackward();
-  delay(BOX_SIZE/2);
+  delay(BOX_SIZE);
   turnPivotLeft();
   startServosForward();
-  delay(BOX_SIZE/2);
+  delay(BOX_SIZE);
   turnPivotRight();
   startServosForward();
-  delay(BOX_SIZE/2);
+  delay(BOX_SIZE);
   turnPivotRight();
   startServosForward();
   while (!whiskerFrontSensorDetect());
