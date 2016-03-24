@@ -1,17 +1,17 @@
 #include <Servo.h>
 
-#define LEFT_SERVO_PIN 11
+#define LEFT_SERVO_PIN 11//
 #define RIGHT_SERVO_PIN 10
 #define FRONT_LED_PIN 5
 #define FRONT_RECEIVER_PIN 13
 #define RIGHT_LED_PIN 3
 #define RIGHT_RECEIVER_PIN 4
-#define BUZZER_PIN 2
+#define BUZZER_PIN 9
 #define WHISKER_PIN 8
 
 #define LEFT_DIME_TURNING_TIME 620
 #define RIGHT_DIME_TURNING_TIME 650
-#define LEFT_PIVOT_TURNING_TIME 1275
+#define LEFT_PIVOT_TURNING_TIME 1250
 #define RIGHT_PIVOT_TURNING_TIME 1275
 #define BOX_SIZE 2000
 
@@ -26,12 +26,15 @@ double allignment = 0.89;  //Higher values make left motor stronger (makes it ve
 void setup() {
   // put your setup code here, to run once:
   //STARTUP
-  Serial.begin(9600);
-  int leaveStartZoneTime, edgeOneTime, findCupTime, boardLengthTime;
+
+  Serial.begin(9600);      // Initilizes serial out. This is used for debugging.
+  int deltaLeaveStartZoneTime, deltaEdgeOneTime, deltaFindCupTime, deltaBoardLengthTime;
   int totalStartingTime;
   attachMotors();
-  delay(1000);
-  #ifdef TESTING
+  delay(1000);             // Gives a bit of time for us to position the robot before it starts moving
+ 
+  #ifdef TESTING           // If we are doing unit tests, do not play the mission code.
+  
   int i;
   for (i = 0; i < 4; i++)
   {
@@ -43,7 +46,11 @@ void setup() {
     turnPivotLeft();
     delay(500);
   }
-  
+  /*
+  beepTwoTimes();
+  delay(3000);
+  beepFiveTimes();
+  */
   /*
   for (i = 0; i < 4; i++)
   {
@@ -84,7 +91,7 @@ void setup() {
   totalStartingTime = millis();
   startServosForward();
   while (!whiskerFrontSensorDetect());
-  leaveStartZoneTime = getTimeSince(totalStartingTime);
+  deltaleaveStartZoneTime = getTimeSince(totalStartingTime);
   stopServos();
   delay(500);
   startServosBackward(); //Prevents the robot from hitting the board.
@@ -193,7 +200,7 @@ void startDimeTurningLeft()
 void turnPivotRight()
 {
   startPivotTurningRight();
-  delay(1275 RIGHT_PIVOT_TURNING_TIME);
+  delay(RIGHT_PIVOT_TURNING_TIME);
   stopServos();
 }
 
@@ -226,7 +233,8 @@ void beepTwoTimes()
   for(i = 0; i < 2; i++)
   {
     tone(BUZZER_PIN, 1000, 500);
-    delay(500);
+    delay(1000);
+    noTone(500);
   }
 }
 
@@ -236,7 +244,9 @@ void beepFiveTimes()
   for(i = 0; i < 5; i++)
   {
     tone(BUZZER_PIN, 1000, 500);
-    delay(500);
+    delay(1000);
+    noTone(500);
+
   }
 }
 
