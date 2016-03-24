@@ -14,7 +14,7 @@
 #define LEFT_DIME_TURNING_TIME 630    // CALIBRATION TEST 2
 #define RIGHT_PIVOT_TURNING_TIME 1275 // CALIBRATION TEST 3
 #define LEFT_PIVOT_TURNING_TIME 1250  // CALIBRATION TEST 4
-#define BOX_SIZE 3000
+#define BOX_SIZE 2000
 #define IR_DELAY_TIME 10
 
 //#define TESTING
@@ -333,7 +333,7 @@ void beepTwoTimes()
   {
     tone(BUZZER_PIN, 1000, 500);
     delay(1000);
-    noTone(500);
+    noTone(BUZZER_PIN);
   }
 }
 
@@ -344,8 +344,7 @@ void beepFiveTimes()
   {
     tone(BUZZER_PIN, 1000, 500);
     delay(1000);
-    noTone(500);
-
+    noTone(BUZZER_PIN);
   }
 }
 
