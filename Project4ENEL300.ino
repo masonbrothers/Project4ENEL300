@@ -10,11 +10,11 @@
 #define WHISKER_PIN 8
 #define VISIBLE_LED_PIN 12
 
-#define LEFT_DIME_TURNING_TIME 640
-#define RIGHT_DIME_TURNING_TIME 650
-#define LEFT_PIVOT_TURNING_TIME 1250
-#define RIGHT_PIVOT_TURNING_TIME 1275
-#define BOX_SIZE 2000
+#define RIGHT_DIME_TURNING_TIME 650   // CALIBRATION TEST 1
+#define LEFT_DIME_TURNING_TIME 630    // CALIBRATION TEST 2
+#define RIGHT_PIVOT_TURNING_TIME 1275 // CALIBRATION TEST 3
+#define LEFT_PIVOT_TURNING_TIME 1250  // CALIBRATION TEST 4
+#define BOX_SIZE 3000
 #define IR_DELAY_TIME 10
 
 //#define TESTING
@@ -24,6 +24,42 @@ Servo servoRight;
 
 double allignment = 0.89;  //Higher values make left motor stronger (makes it veer right)
                            //Lower values make right motor stronger (makes it veer left)
+
+void calibration()
+{
+
+  int i;
+  for (i = 0; i < 4; i++) // CALIBRATION TEST 1
+  {
+    turnDimeRight();
+    delay(1000);
+  }
+  delay(3000);
+  for (i = 0; i < 4; i++) // CALIBRATION TEST 2
+  {
+    turnDimeLeft();
+    delay(1000);
+  }
+  /*
+  for (i = 0; i < 4; i++) // CALIBRATION TEST 3
+  {
+    turnPivotRight();
+    delay(1000);
+  }
+  delay(3000);
+  for (i = 0; i < 4; i++) // CALIBRATION TEST 4
+  {
+    turnPivotLeft();
+    delay(1000);
+  }
+  */
+  /*
+  beepTwoTimes();
+  delay(3000);
+  beepFiveTimes();
+  */
+
+}
 
 void setup() {
   // put your setup code here, to run once:
@@ -37,38 +73,7 @@ void setup() {
   delay(1000);             // Gives a bit of time for us to position the robot before it starts moving
  
   #ifdef TESTING           // If we are doing unit tests, do not play the mission code.
-  /*
-  int i;
-  for (i = 0; i < 4; i++)
-  {
-    turnPivotRight();
-    delay(500);
-  }
-  for (i = 0; i < 4; i++)
-  {
-    turnPivotLeft();
-    delay(500);
-  }
-  */
-  /*
-  beepTwoTimes();
-  delay(3000);
-  beepFiveTimes();
-  */
-  /*
-  for (i = 0; i < 4; i++)
-  {
-    turnDimeRight();
-    delay(500);
-  }
-  */
-  /*
-  for (i = 0; i < 4; i++)
-  {
-    turnDimeLeft();
-    delay(500);
-  }
-  */
+
   /*
   startServosForward();
   delay(1000);
@@ -79,6 +84,8 @@ void setup() {
   //Cup has been detected
   avoidObstacle();
   */
+  calibration();
+  
   while (1)
   {
     Serial.print("Right: ");
@@ -115,8 +122,6 @@ void setup() {
   Serial.println("Going Forward");
   startServosForward();
   hitBoardTime = millis();
-       Serial.print("Right: ");
-    Serial.print(irRightSensorDetect());
   while (irRightSensorDetect())
   {
       delay(IR_DELAY_TIME);
@@ -180,11 +185,12 @@ void setup() {
     lastMeasuringWallTime = millis();
     while(1)
     {
-      if (deltaBoardLengthTime - deltaTimeToFirstCorner < getTimeSince(lastMeasuringWallTime))
+      if (deltaBoardLengthTime - deltaTimeToFirstCorner - 750 < getTimeSince(lastMeasuringWallTime))
         break;
     }
     stopServos();
     turnPivotLeft();
+    startServosForward();
     lastStretchTime = millis();
     while(1)
     {
@@ -204,7 +210,7 @@ void turnCorner()
   delay(1000); //Continue Driving forward a bit
   turnDimeRight();
   startServosForward();
-  delay(3000); //Get to the other side of the board
+  delay(2500); //Get to the other side of the board
   turnDimeRight();    
   startServosForward();
   delay(1500); // Drive forward so that the sensor will see the board.
@@ -212,11 +218,9 @@ void turnCorner()
 
 void avoidObstacle()
 {
-  startServosBackward();
-  delay(BOX_SIZE);
   turnPivotLeft();
   startServosForward();
-  delay(BOX_SIZE);
+  delay(BOX_SIZE/2);
   turnPivotRight();
   startServosForward();
   delay(BOX_SIZE);
