@@ -247,6 +247,12 @@ void tryToHitTheBoard()
   {
     bool left = whiskerLeftSensorDetect();
     bool right = whiskerRightSensorDetect();
+    if((!whiskerLeftSensorDetect())&&(!whiskerRightSensorDetect()))
+    {
+      delay(200);
+      if (whiskerLeftSensorDetect()&&whiskerRightSensorDetect())
+        break;
+    }
     if (left&&right)
       break;
     else if (left)
@@ -255,8 +261,6 @@ void tryToHitTheBoard()
       delay(300);
       setServos(-20,20);
       delay(200);
-      setServos(20,20);
-      delay(300);
     }
     else if (right)
     {
@@ -264,13 +268,12 @@ void tryToHitTheBoard()
       delay(300);
       setServos(20,-20);
       delay(200);
-      setServos(20,20);
-      delay(300);
+
     }
+    setServos(20,20);
+    delay(300);
     
     
-    if (whiskerLeftSensorDetect()&&whiskerRightSensorDetect())
-      break;
   }
   startServosBackward(); // Prevents the robot from hitting the board.
   delay(1000);
