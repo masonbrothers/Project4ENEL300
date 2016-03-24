@@ -8,12 +8,14 @@
 #define RIGHT_RECEIVER_PIN 4
 #define BUZZER_PIN 9
 #define WHISKER_PIN 8
+#define VISIBLE_LED_PIN 12
 
 #define LEFT_DIME_TURNING_TIME 640
 #define RIGHT_DIME_TURNING_TIME 650
 #define LEFT_PIVOT_TURNING_TIME 1250
 #define RIGHT_PIVOT_TURNING_TIME 1275
 #define BOX_SIZE 2000
+#define IR_DELAY_TIME 10
 
 //#define TESTING
 
@@ -31,10 +33,11 @@ void setup() {
   int deltaLeaveStartZoneTime, deltaTimeToFirstCorner, deltaFindCupTime, deltaBoardLengthTime;
   int startingTime, roundedFirstCornerTime, hitBoardTime, startMeasuringWallTime, roundedThirdCornerTime, lastMeasuringWallTime, lastStretchTime;
   attachMotors();
+  pinMode(VISIBLE_LED_PIN, OUTPUT);
   delay(1000);             // Gives a bit of time for us to position the robot before it starts moving
  
   #ifdef TESTING           // If we are doing unit tests, do not play the mission code.
-  
+  /*
   int i;
   for (i = 0; i < 4; i++)
   {
@@ -46,6 +49,7 @@ void setup() {
     turnPivotLeft();
     delay(500);
   }
+  */
   /*
   beepTwoTimes();
   delay(3000);
@@ -84,6 +88,14 @@ void setup() {
     Serial.print("\tWhisker: ");
     Serial.print(whiskerFrontSensorDetect());
     Serial.print("\n");
+    if (irRightSensorDetect())
+    {
+      digitalWrite(VISIBLE_LED_PIN, HIGH);
+    }
+    else
+    {
+      digitalWrite(VISIBLE_LED_PIN, LOW);
+    }
   }
   #endif
   
@@ -100,17 +112,26 @@ void setup() {
   stopServos();
   delay(1000);
   turnDimeLeft();        // Turns left fast
+  Serial.println("Going Forward");
   startServosForward();
   hitBoardTime = millis();
-  while (irRightSensorDetect());        // While board is there keep going forward
-  
+       Serial.print("Right: ");
+    Serial.print(irRightSensorDetect());
+  while (irRightSensorDetect())
+  {
+      delay(IR_DELAY_TIME);
+  }  // While board is there keep going forward
+  //digitalWrite(VISIBLE_LED_PIN, LOW);
   //Turns around board
   deltaTimeToFirstCorner = getTimeSince(hitBoardTime);
   turnCorner();
   roundedFirstCornerTime = millis();
   
   startServosForward();
-  while (!irFrontSensorDetect());
+  while (!irFrontSensorDetect())
+  {
+    delay(IR_DELAY_TIME);
+  }
   deltaFindCupTime = getTimeSince(roundedFirstCornerTime);
   stopServos();
   delay(500);
@@ -118,11 +139,17 @@ void setup() {
   //Cup has been detected
   avoidObstacle();     // Avoids obstacle and sets rover parallel to board.
   startServosForward(); 
-  while (irRightSensorDetect());        // While board is there keep going forward
+  while (irRightSensorDetect())
+  {
+      delay(IR_DELAY_TIME);
+  }  // While board is there keep going forward      // While board is there keep going forward
   turnCorner();
-  startServosForward(); 
+  startServosForward();
   startMeasuringWallTime = millis();
-  while (irRightSensorDetect());
+  while (irRightSensorDetect())
+  {
+      delay(IR_DELAY_TIME);
+  }  // While board is there keep going forward
   deltaBoardLengthTime = getTimeSince(startMeasuringWallTime);
   turnCorner();
   roundedThirdCornerTime = millis();
@@ -135,6 +162,7 @@ void setup() {
       beepFiveTimes();
       cupFound = false;
     }
+    delay(IR_DELAY_TIME);
     
   }
   if (cupFound)
@@ -143,7 +171,10 @@ void setup() {
     beepTwoTimes();
     avoidObstacle();
     startServosForward(); 
-    while (irRightSensorDetect());        // While board is there keep going forward
+    while (irRightSensorDetect())
+    {
+        delay(IR_DELAY_TIME);
+    }  // While board is there keep going forward
     turnCorner();
     startServosForward(); 
     lastMeasuringWallTime = millis();
@@ -173,7 +204,7 @@ void turnCorner()
   delay(1000); //Continue Driving forward a bit
   turnDimeRight();
   startServosForward();
-  delay(2000); //Get to the other side of the 
+  delay(3000); //Get to the other side of the board
   turnDimeRight();    
   startServosForward();
   delay(1500); // Drive forward so that the sensor will see the board.
@@ -185,10 +216,10 @@ void avoidObstacle()
   delay(BOX_SIZE/2);
   turnPivotLeft();
   startServosForward();
-  delay(BOX_SIZE);
+  delay(BOX_SIZE/2);
   turnPivotRight();
   startServosForward();
-  delay(BOX_SIZE);
+  delay(BOX_SIZE/2);
   turnPivotRight();
   startServosForward();
   while (!whiskerFrontSensorDetect());
@@ -332,11 +363,11 @@ boolean irRightSensorDetect()
 boolean irSensorDetect(int irLedPin, int irReceiverPin)
 {
   int count = 0;
-  for (int i = 0; i < 10; i++)
+  for (int i = 0; i < 20; i++)
   {
     count += irDetect(irLedPin, irReceiverPin, 38000);
   } 
-  if (count > 8)
+  if (count > 19)
     return true;
   return false;
 }
