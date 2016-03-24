@@ -366,8 +366,9 @@ boolean irSensorDetect(int irLedPin, int irReceiverPin)
   for (int i = 0; i < 20; i++)
   {
     count += irDetect(irLedPin, irReceiverPin, 38000);
+    delay(1);
   } 
-  if (count > 19)
+  if (count > 15)
     return true;
   return false;
 }
