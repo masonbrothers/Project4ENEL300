@@ -21,7 +21,7 @@
 #define BOX_SIZE 2000
 #define IR_DELAY_TIME 10
 
-#define TESTING
+//#define TESTING
 
 Servo servoLeft;
 Servo servoRight;
@@ -154,7 +154,8 @@ void setup() {
   {
       delay(IR_DELAY_TIME);
   }  // While board is there keep going forward      // While board is there keep going forward
-  turnCorner();
+  turnLongCorner();
+  turnPivotRight();
   tryToHitTheBoard(); // MASON FLAG
   startServosForward();
   startMeasuringWallTime = millis();
@@ -187,7 +188,9 @@ void setup() {
     {
         delay(IR_DELAY_TIME);
     }  // While board is there keep going forward
-    turnCorner();
+    turnLongCorner();
+    
+    turnPivotRight();
     tryToHitTheBoard(); // MASON FLAG
     startServosForward(); 
     lastMeasuringWallTime = millis();
@@ -224,23 +227,37 @@ void turnCorner()
   delay(1500); // Drive forward so that the sensor will see the board.
 }
 
+void turnLongCorner()
+{
+  startServosForward();
+  delay(1000); //Continue Driving forward a bit
+  turnPivotRight();
+  startServosForward();
+  delay(3000); //Get to the other side of the board
+  turnPivotRight();    
+  startServosForward();
+  delay(1500); // Drive forward so that the sensor will see the board.
+}
+
 void avoidObstacle()
 {
-  startServosBackward();
-  delay(300);
+  startServosForward();
+  delay(200);
   turnPivotLeft();
   startServosForward();
   delay(BOX_SIZE/2);
   turnPivotRight();
   startServosForward();
   delay(BOX_SIZE);
+  turnPivotRight();
+  startServosForward();
+  delay(BOX_SIZE*2/5);
   tryToHitTheBoard();
 }
 
 void tryToHitTheBoard()
 {
-  //turnPivotRight();
-  setServos(20,20);
+  setServosNoFactor(20,20);
   while ((!whiskerLeftSensorDetect())&&(!whiskerRightSensorDetect()));
   stopServos();
   while(1)
@@ -249,7 +266,7 @@ void tryToHitTheBoard()
     bool right = whiskerRightSensorDetect();
     if((!whiskerLeftSensorDetect())&&(!whiskerRightSensorDetect()))
     {
-      delay(200);
+      delay(100);
       if (whiskerLeftSensorDetect()&&whiskerRightSensorDetect())
         break;
     }
@@ -257,20 +274,20 @@ void tryToHitTheBoard()
       break;
     else if (left)
     {
-      setServos(-20,-20);
+      setServosNoFactor(-20,-20);
       delay(300);
-      setServos(-20,20);
+      setServosNoFactor(-20,20);
       delay(200);
     }
     else if (right)
     {
-      setServos(-20,-20);
+      setServosNoFactor(-20,-20);
       delay(300);
-      setServos(20,-20);
+      setServosNoFactor(20,-20);
       delay(200);
 
     }
-    setServos(20,20);
+    setServosNoFactor(20,20);
     delay(300);
     
     
@@ -371,6 +388,13 @@ void setServos(int left, int right) //Convention is Positive numbers for forward
   servoLeft.writeMicroseconds(1500+(double)left*allignment); // Positive for forward, negative for backward
   servoRight.writeMicroseconds(1500-(double)right/allignment); // Negative for forward, positive for backward
 }
+
+void setServosNoFactor(int left, int right) //Convention is Positive numbers for forward
+{
+  servoLeft.writeMicroseconds(1500+(double)left); // Positive for forward, negative for backward
+  servoRight.writeMicroseconds(1500-(double)right); // Negative for forward, positive for backward
+}
+
 
 void beepTwoTimes()
 {
