@@ -135,11 +135,11 @@ void setup() {
   //digitalWrite(VISIBLE_LED_PIN, LOW);
   //Turns around board
   
-  
+  deltaTimeToFirstCorner = getTimeSince(hitBoardTime);
   alignHitting();
   
   
-  deltaTimeToFirstCorner = getTimeSince(hitBoardTime);
+
   turnCorner();
   roundedFirstCornerTime = millis();
   
@@ -173,10 +173,9 @@ void setup() {
       delay(IR_DELAY_TIME);
   }  // While board is there keep going forward
   
+  deltaBoardLengthTime = getTimeSince(startMeasuringWallTime);
   alignHitting();
   
-  
-  deltaBoardLengthTime = getTimeSince(startMeasuringWallTime);
   turnCorner();
   roundedThirdCornerTime = millis();
   bool cupFound = true;
@@ -220,12 +219,17 @@ void setup() {
     turnPivotLeft();
     startServosForward();
     lastStretchTime = millis();
+    /*
+    //This code uses the timer to find home
     while(1)
     {
       if (deltaLeaveStartZoneTime < getTimeSince(lastStretchTime))
         break;
     }
     stopServos();
+    */
+    //This code uses the front sensors to determine when it has hit the backdrop and is home.
+    while (!whiskerFrontSensorDetect());    //Continue until whisker is triggered
   }
   //START
   #endif
