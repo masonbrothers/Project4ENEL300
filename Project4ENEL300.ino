@@ -134,6 +134,17 @@ void setup() {
   }  // While board is there keep going forward
   //digitalWrite(VISIBLE_LED_PIN, LOW);
   //Turns around board
+  
+  
+  // TEST HITTING
+  startServosBackward();
+  delay(1000);
+  turnPivotRight();
+  startServosBackward();
+  delay(800);
+  tryToHitTheBoard(); // MASON FLAG
+  
+  
   deltaTimeToFirstCorner = getTimeSince(hitBoardTime);
   turnCorner();
   roundedFirstCornerTime = millis();
@@ -154,6 +165,16 @@ void setup() {
   {
       delay(IR_DELAY_TIME);
   }  // While board is there keep going forward      // While board is there keep going forward
+  
+  
+  // TEST HITTING
+  startServosBackward();
+  delay(1000);
+  turnPivotRight();
+  startServosBackward();
+  delay(800);
+  tryToHitTheBoard(); // MASON FLAG
+  
   turnLongCorner();
   turnPivotRight();
   tryToHitTheBoard(); // MASON FLAG
@@ -163,6 +184,16 @@ void setup() {
   {
       delay(IR_DELAY_TIME);
   }  // While board is there keep going forward
+  
+    // TEST HITTING
+  startServosBackward();
+  delay(1000);
+  turnPivotRight();
+  startServosBackward();
+  delay(800);
+  tryToHitTheBoard(); // MASON FLAG
+  
+  
   deltaBoardLengthTime = getTimeSince(startMeasuringWallTime);
   turnCorner();
   roundedThirdCornerTime = millis();
@@ -188,6 +219,16 @@ void setup() {
     {
         delay(IR_DELAY_TIME);
     }  // While board is there keep going forward
+    
+    // TEST HITTING
+    startServosBackward();
+    delay(1000);
+    turnPivotRight();
+    startServosBackward();
+    delay(800);
+    tryToHitTheBoard(); // MASON FLAG
+  
+    
     turnLongCorner();
     
     turnPivotRight();
