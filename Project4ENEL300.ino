@@ -12,12 +12,12 @@
 #define WHISKER_RIGHT_PIN 2
 #define VISIBLE_LED_PIN 12
 
-#define RIGHT_DIME_TURNING_TIME 610   // CALIBRATION TEST 1
-#define LEFT_DIME_TURNING_TIME 630    // CALIBRATION TEST 2
+#define RIGHT_DIME_TURNING_TIME 610 
+#define LEFT_DIME_TURNING_TIME 630   
 
 
-#define RIGHT_PIVOT_TURNING_TIME 1260 // CALIBRATION TEST 3
-#define LEFT_PIVOT_TURNING_TIME 1240  // CALIBRATION TEST 4
+#define RIGHT_PIVOT_TURNING_TIME 1260 // CALIBRATION TEST 1
+#define LEFT_PIVOT_TURNING_TIME 1240  // CALIBRATION TEST 2
 #define BOX_SIZE 2000
 #define IR_DELAY_TIME 10
 
@@ -33,6 +33,7 @@ void calibration()
 {
 
   int i;
+  /*
   for (i = 0; i < 4; i++) // CALIBRATION TEST 1
   {
     turnPivotRight();
@@ -44,19 +45,19 @@ void calibration()
     turnPivotLeft();
     delay(1000);
   }
-  /*
+  */
   for (i = 0; i < 4; i++) // CALIBRATION TEST 3
   {
-    turnPivotRight();
+    turnPivotBackwardRight();
     delay(1000);
   }
   delay(3000);
   for (i = 0; i < 4; i++) // CALIBRATION TEST 4
   {
-    turnPivotLeft();
+    turnPivotBackwardLeft();
     delay(1000);
   }
-  */
+
   /*
   beepTwoTimes();
   delay(3000);
@@ -70,8 +71,9 @@ void setup() {
   //STARTUP
 
   Serial.begin(9600);      // Initilizes serial out. This is used for debugging.
+  //Note: delta is used to denote changes in time. These are used to determine lengths.
   int deltaLeaveStartZoneTime, deltaTimeToFirstCorner, deltaFindCupTime, deltaBoardLengthTime;
-  int startingTime, roundedFirstCornerTime, hitBoardTime, startMeasuringWallTime, roundedThirdCornerTime, lastMeasuringWallTime, lastStretchTime;
+  int startingTime, roundedFirstCornerTime, toEdgeOfBoardFirstTime, startMeasuringWallTime, roundedThirdCornerTime, lastMeasuringWallTime, lastStretchTime;
   attachMotors();
   pinMode(VISIBLE_LED_PIN, OUTPUT);
   delay(1000);             // Gives a bit of time for us to position the robot before it starts moving
@@ -89,7 +91,7 @@ void setup() {
   avoidObstacle();
   */
   //calibration();
-  tryToHitTheBoard();
+  //tryToHitTheBoard();
   while (1)
   {
     Serial.print("RightIR: ");
@@ -114,28 +116,25 @@ void setup() {
   
   #ifndef TESTING
   
-  startingTime = millis();          //Time at the begining of the test
-  startServosForward();
-  while (!whiskerFrontSensorDetect());    //Continue until whisker is triggered
-  deltaLeaveStartZoneTime = getTimeSince(startingTime); //Get the change in time between starting to move and touching the wall 
+  startingTime = millis();                                                  //Time at the begining of the test
+  startServosForward();                                                     //Starts going forward towards board
+  while (!whiskerFrontSensorDetect());                                      //Continue until whisker is triggered
+  deltaLeaveStartZoneTime = getTimeSince(startingTime);                     //Get the change in time between starting to move and touching the wall 
   stopServos();
-  delay(500);
-  startServosBackward(); // Prevents the robot from hitting the board.
+  delay(500);                                                               //Robot doesn't do anything
+  startServosBackward();                                                    //Goes backward. Prevents the robot from hitting the board.
   delay(800);
-  stopServos();
+  stopServos();                                                             //Robot doesn't do anything
   delay(1000);
-  turnPivotLeft();        // Turns left fast
-  Serial.println("Going Forward");
-  startServosForward();
-  hitBoardTime = millis();
-  while (irRightSensorDetect())
+  turnPivotLeft();                                                          //Turns left to align robot with board. It is on the side without the cup.
+  startServosForward();  
+  toEdgeOfBoardFirstTime = millis();                                        //Gets the time. This time is when it starts moving foward to 
+  while (irRightSensorDetect())                                             //Keep going until the board is there.
   {
     delay(IR_DELAY_TIME);
-  }  // While board is there keep going forward
-  //digitalWrite(VISIBLE_LED_PIN, LOW);
-  //Turns around board
+  }
   
-  deltaTimeToFirstCorner = getTimeSince(hitBoardTime);
+  deltaTimeToFirstCorner = getTimeSince(toEdgeOfBoardFirstTime);            //This saves the time to the first corner from starting near the board.
   alignHitting();
   
   
@@ -161,7 +160,7 @@ void setup() {
   }  // While board is there keep going forward      // While board is there keep going forward
   
   
-  alignHitting();
+  alignHitting(); //TAG
   
   turnLongCorner();
   turnPivotRight();
@@ -202,7 +201,7 @@ void setup() {
       delay(IR_DELAY_TIME);
     }  // While board is there keep going forward
     
-    alignHitting();
+    alignHitting(); // TAG
     
     turnLongCorner();
     
@@ -236,8 +235,8 @@ void setup() {
   #endif
   
 }
-
-void alignHitting()
+/*
+void alignLongHitting()
 {
   // TEST HITTING
   stopServos();
@@ -251,6 +250,23 @@ void alignHitting()
   delay(800);
   tryToHitTheBoard(); // MASON FLAG
 }
+*/
+
+void alignHitting()
+{
+  // TEST HITTING
+  stopServos();
+  delay(500);
+  startServosBackward();
+  delay(600);
+  turnPivotBackwardRight();
+  stopServos();
+  delay(500);
+  //startServosBackward();
+  //delay(800);
+  tryToHitTheBoard(); // MASON FLAG
+}
+
 
 void turnCorner()
 {
@@ -382,9 +398,21 @@ void turnPivotLeft()
   stopServos();
 }
 
+void turnPivotBackwardLeft()
+{
+  startPivotTurningBackwardLeft();
+  delay(RIGHT_PIVOT_TURNING_TIME);
+  stopServos();
+}
+
 void startPivotTurningLeft()
 {
   setServos(0, 100);
+}
+
+void startPivotTurningBackwardLeft()
+{
+  setServos(-100, 0);
 }
 
 void turnDimeRight()
@@ -393,6 +421,7 @@ void turnDimeRight()
   delay(RIGHT_DIME_TURNING_TIME);
   stopServos();
 }
+
 void startDimeTurningLeft()
 {
   setServos(-100, 100);
@@ -405,11 +434,22 @@ void turnPivotRight()
   stopServos();
 }
 
+void turnPivotBackwardRight()
+{
+  startPivotTurningBackwardRight();
+  delay(LEFT_PIVOT_TURNING_TIME);
+  stopServos();
+}
+
 void startPivotTurningRight()
 {
   setServos(100, 0);
 }
 
+void startPivotTurningBackwardRight()
+{
+  setServos(0, -100);
+}
 
 void startDimeTurningRight()
 {
