@@ -142,8 +142,6 @@ void setup() {
   deltaTimeToFirstCorner = getTimeSince(toEdgeOfBoardFirstTime);            //This saves the time to the first corner from starting near the board.
   alignHitting();
   
-  
-
   turnCorner();
   roundedFirstCornerTime = millis();
   
@@ -157,7 +155,7 @@ void setup() {
   delay(500);
   
   //Cup has been detected
-  if(deltaFindCupTime < 7000)
+  if(deltaFindCupTime < 7000) //for general case
   {
     
     avoidObstacle();     // Avoids obstacle and sets rover parallel to board.
@@ -171,7 +169,7 @@ void setup() {
     alignHitting(); //TAG
     turnLongCorner();
   }
-  else
+  else //for extreme case 2 (cup is near end of board)
   {
     avoidObstacleExtremeCase2();
     startServosForward();
@@ -185,7 +183,7 @@ void setup() {
   turnPivotRight();
   tryToHitTheBoard(); // MASON FLAG
   startServosForward();
-  startMeasuringWallTime = millis();
+  startMeasuringWallTime = millis(); //to measure length of board time
   while (irRightSensorDetect())
   {
     delay(IR_DELAY_TIME);
@@ -197,7 +195,7 @@ void setup() {
   turnCorner();
   roundedThirdCornerTime = millis();
   bool cupFound = true;
-  while(!irFrontSensorDetect())
+  while(!irFrontSensorDetect()) //Search for cup
   {
     if (deltaFindCupTime + 1000 < getTimeSince(roundedThirdCornerTime)) // the cup is not there
     {
@@ -209,7 +207,7 @@ void setup() {
     delay(IR_DELAY_TIME);
     
   }
-  if (cupFound)
+  if (cupFound) // For case: The cup is still there
   {
     stopServos();
     beepTwoTimes();
@@ -228,14 +226,14 @@ void setup() {
     tryToHitTheBoard(); // MASON FLAG
     startServosForward(); 
     lastMeasuringWallTime = millis();
-    while(1)
+    while(1) // move forwards until perpendicular to the starting zone
     {
       if (deltaBoardLengthTime - deltaTimeToFirstCorner - 750 < getTimeSince(lastMeasuringWallTime))
         break;
     }
     stopServos();
     turnPivotLeft();
-    startServosForward();
+    startServosForward(); // return to starting zone
     lastStretchTime = millis();
     /*
     //This code uses the timer to find home
