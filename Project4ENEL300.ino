@@ -130,7 +130,7 @@ void setup() {
   hitBoardTime = millis();
   while (irRightSensorDetect())
   {
-      delay(IR_DELAY_TIME);
+    delay(IR_DELAY_TIME);
   }  // While board is there keep going forward
   //digitalWrite(VISIBLE_LED_PIN, LOW);
   //Turns around board
@@ -157,7 +157,7 @@ void setup() {
   startServosForward(); 
   while (irRightSensorDetect())
   {
-      delay(IR_DELAY_TIME);
+    delay(IR_DELAY_TIME);
   }  // While board is there keep going forward      // While board is there keep going forward
   
   
@@ -170,7 +170,7 @@ void setup() {
   startMeasuringWallTime = millis();
   while (irRightSensorDetect())
   {
-      delay(IR_DELAY_TIME);
+    delay(IR_DELAY_TIME);
   }  // While board is there keep going forward
   
   deltaBoardLengthTime = getTimeSince(startMeasuringWallTime);
@@ -199,7 +199,7 @@ void setup() {
     startServosForward(); 
     while (irRightSensorDetect())
     {
-        delay(IR_DELAY_TIME);
+      delay(IR_DELAY_TIME);
     }  // While board is there keep going forward
     
     alignHitting();
@@ -230,6 +230,7 @@ void setup() {
     */
     //This code uses the front sensors to determine when it has hit the backdrop and is home.
     while (!whiskerFrontSensorDetect());    //Continue until whisker is triggered
+    stopServos();
   }
   //START
   #endif
@@ -458,7 +459,7 @@ void beepFiveTimes()
 
 boolean whiskerFrontSensorDetect()
 {
-  return !digitalRead(WHISKER_PIN); //When the pin goes low, the whisker has touched.
+  return (whiskerLeftSensorDetect() || whiskerRightSensorDetect()); //When the pin goes low, the whisker has touched.
 }
 
 boolean whiskerLeftSensorDetect()
