@@ -136,13 +136,7 @@ void setup() {
   //Turns around board
   
   
-  // TEST HITTING
-  startServosBackward();
-  delay(1000);
-  turnPivotRight();
-  startServosBackward();
-  delay(800);
-  tryToHitTheBoard(); // MASON FLAG
+  alignHitting();
   
   
   deltaTimeToFirstCorner = getTimeSince(hitBoardTime);
@@ -167,13 +161,7 @@ void setup() {
   }  // While board is there keep going forward      // While board is there keep going forward
   
   
-  // TEST HITTING
-  startServosBackward();
-  delay(1000);
-  turnPivotRight();
-  startServosBackward();
-  delay(800);
-  tryToHitTheBoard(); // MASON FLAG
+  alignHitting();
   
   turnLongCorner();
   turnPivotRight();
@@ -185,13 +173,7 @@ void setup() {
       delay(IR_DELAY_TIME);
   }  // While board is there keep going forward
   
-    // TEST HITTING
-  startServosBackward();
-  delay(1000);
-  turnPivotRight();
-  startServosBackward();
-  delay(800);
-  tryToHitTheBoard(); // MASON FLAG
+  alignHitting();
   
   
   deltaBoardLengthTime = getTimeSince(startMeasuringWallTime);
@@ -205,6 +187,7 @@ void setup() {
       stopServos();
       beepFiveTimes();
       cupFound = false;
+      break;
     }
     delay(IR_DELAY_TIME);
     
@@ -220,14 +203,7 @@ void setup() {
         delay(IR_DELAY_TIME);
     }  // While board is there keep going forward
     
-    // TEST HITTING
-    startServosBackward();
-    delay(1000);
-    turnPivotRight();
-    startServosBackward();
-    delay(800);
-    tryToHitTheBoard(); // MASON FLAG
-  
+    alignHitting();
     
     turnLongCorner();
     
@@ -254,6 +230,21 @@ void setup() {
   //START
   #endif
   
+}
+
+void alignHitting()
+{
+  // TEST HITTING
+  stopServos();
+  delay(500);
+  startServosBackward();
+  delay(1300);
+  turnPivotRight();
+  stopServos();
+  delay(500);
+  startServosBackward();
+  delay(800);
+  tryToHitTheBoard(); // MASON FLAG
 }
 
 void turnCorner()
@@ -333,6 +324,8 @@ void tryToHitTheBoard()
     
     
   }
+  stopServos();
+  delay(500);
   startServosBackward(); // Prevents the robot from hitting the board.
   delay(1000);
   stopServos();
