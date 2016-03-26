@@ -156,27 +156,37 @@ void setup() {
   alignHitting();
   //got to end of 1st edge, aligned, proceeding to next obstacle side
   turnCorner();
-  roundedFirstCornerTime = millis();
-
+  roundedFirstCornerTime = millis();//saves the time when it first makes it around the 1st corner. may be overwritten if not extreme case 1
   //head towards obstacle first time
+  bool isExtremeCase1 = false;
   startServosForward();
-  while (!irFrontSensorDetect())
+   while (getTimeSince(roundedFirstCornerTime) < 1500)
   {
+    if(irFrontSensorDetect())
+    {
+      isExtremeCase1 = true;
+      break;
+    }
     delay(IR_DELAY_TIME);
   }
+  if(!isExtremeCase1)//general case
+  {
+    alignHittingStart();
+    roundedFirstCornerTime=millis();//overwrite the rounded first corner time to after it is aligned
+      //not extreme case 1 go forwards as normal
+      startServosForward();
+    while (!irFrontSensorDetect())
+    {
+      delay(IR_DELAY_TIME);
+    }
+  }
+   
   deltaFindCupTime = getTimeSince(roundedFirstCornerTime);
   stopServos();
   delay(500);
-  
-  //start April
-  if(irFrontSensorDetect)
-  {
-    
-  }
-  // end April
 
   //Cup has been detected
-  if(deltaFindCupTime < 6000) //for general case (assume there is space to align on other side of the obstacle)
+  if(deltaFindCupTime < 4500) //for general case (assume there is space to align on other side of the obstacle)
   {
     
     avoidObstacle();     // Avoids obstacle and sets rover parallel to board(using align feature)
@@ -219,6 +229,16 @@ void setup() {
   turnCorner();
   roundedThirdCornerTime = millis();
   bool cupFound = true;
+//second time around
+  if(!isExtremeCase1)//general case
+  {
+    delay(1500);//move forwards to align (same amount as first time around for general case only)
+    stopServos();
+    alignHittingStart();
+    startServosForward();
+    roundedThirdCornerTime = millis(); //rewrite roundedThirdCornerTime if not extreme case 1
+  }
+  
   while(!irFrontSensorDetect()) //Search for cup
   {
     if (deltaFindCupTime + 1000 < getTimeSince(roundedThirdCornerTime)) // the cup is not there
@@ -315,13 +335,24 @@ void alignLongHitting()
 }
 */
 
-void alignHitting()
+void alignHitting()//for the edge of the board. reverses before aligning
 {
-  // TEST HITTING
   stopServos();
   delay(500);
   startServosBackward();
   delay(600);
+  turnPivotBackwardRight();
+  stopServos();
+  delay(500);
+  //startServosBackward();
+  //delay(800);
+  tryToHitTheBoard(); // MASON FLAG
+}
+
+void alignHittingStart()//for the start of the board when not extreme case 1 . reverses before aligning
+{
+  stopServos();
+  delay(500);
   turnPivotBackwardRight();
   stopServos();
   delay(500);
@@ -370,8 +401,8 @@ void turnExtraLongCorner()
 
 void avoidObstacle()
 {
-  startServosForward();
-  delay(200);
+  //startServosForward();//this is for going a bit forward after detecting the cup
+  //delay(200);
   turnPivotLeft();
   startServosForward();
   delay(600);//used to be 1000
@@ -395,7 +426,7 @@ void avoidObstacleExtremeCase2()
   startServosForward();
 }
 
-void tryToHitTheBoard()
+void tryToHitTheBoard()//needs to start facing the board, ends parallel in right direction
 {
   setServosNoFactor(20,20);
   while ((!whiskerLeftSensorDetect())&&(!whiskerRightSensorDetect()));
