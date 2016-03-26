@@ -72,19 +72,31 @@ void setup() {
 
   Serial.begin(9600);                                                          // Initilizes serial out. This is used for debugging.
   //Note: delta is used to denote changes in time. These are used to determine lengths.
-  int deltaLeaveStartZoneTime, deltaTimeToFirstCorner, deltaFindCupTime, deltaBoardLengthTime;
-  int startingTime, roundedFirstCornerTime, toEdgeOfBoardFirstTime, startMeasuringWallTime, roundedThirdCornerTime, lastMeasuringWallTime, lastStretchTime;
+  int deltaLeaveStartZoneTime; //start zone to board
+  int deltaTimeToFirstCorner;  //initial contact with board to left end of board
+  int deltaFindCupTime;        //time from left end to cup 1st time
+  int deltaBoardLengthTime;    //time to traverse entire side of board (non cup side measured)
+  
+  int startingTime;           //global starting time of entire code
+  int roundedFirstCornerTime; //time as soon as corner is rounded and robot is parallel to board 1st time
+  int toEdgeOfBoardFirstTime;
+  int startMeasuringWallTime;
+  int roundedThirdCornerTime;
+  int lastMeasuringWallTime;
+  int lastStretchTime;
   attachMotors();
   pinMode(VISIBLE_LED_PIN, OUTPUT);
   delay(1000);             // Gives a bit of time for us to position the robot before it starts moving
  
   #ifdef TESTING           // If we are doing unit tests, do not play the mission code.
 
+/*
     while (!whiskerFrontSensorDetect());    //Continue until whisker is triggered
     stopServos();
     startServosBackward();
     delay(200);
     stopServos();
+    */
   /*
   startServosForward();
   delay(1000);
@@ -120,7 +132,7 @@ void setup() {
   #endif
   
   #ifndef TESTING
-  
+  //starting zone to board
   startingTime = millis();                                                  //Time at the begining of the test
   startServosForward();                                                     //Starts going forward towards board
   while (!whiskerFrontSensorDetect());                                      //Continue until whisker is triggered
@@ -132,6 +144,7 @@ void setup() {
   stopServos();                                                             //Robot doesn't do anything
   delay(1000);
   turnPivotLeft();                                                          //Turns left to align robot with board. It is on the side without the cup.
+  //go towards edge of board 1st time
   startServosForward();  
   toEdgeOfBoardFirstTime = millis();                                        //Gets the time. This time is when it starts moving foward to 
   while (irRightSensorDetect())                                             //Keep going until the board is there.
@@ -141,10 +154,11 @@ void setup() {
   
   deltaTimeToFirstCorner = getTimeSince(toEdgeOfBoardFirstTime);            //This saves the time to the first corner from starting near the board.
   alignHitting();
-  
+  //got to end of 1st edge, aligned, proceeding to next obstacle side
   turnCorner();
   roundedFirstCornerTime = millis();
-  
+
+  //head towards obstacle first time
   startServosForward();
   while (!irFrontSensorDetect())
   {
@@ -154,11 +168,18 @@ void setup() {
   stopServos();
   delay(500);
   
-  //Cup has been detected
-  if(deltaFindCupTime < 7000) //for general case
+  //start April
+  if(irFrontSensorDetect)
   {
     
-    avoidObstacle();     // Avoids obstacle and sets rover parallel to board.
+  }
+  // end April
+
+  //Cup has been detected
+  if(deltaFindCupTime < 6000) //for general case (assume there is space to align on other side of the obstacle)
+  {
+    
+    avoidObstacle();     // Avoids obstacle and sets rover parallel to board(using align feature)
     startServosForward(); 
     while (irRightSensorDetect())
     {
@@ -166,22 +187,25 @@ void setup() {
     }  // While board is there keep going forward
     
     
-    alignHitting(); //TAG
+    alignHitting(); //aligning on right end of board (1st time)
     turnLongCorner();
   }
   else //for extreme case 2 (cup is near end of board)
   {
-    avoidObstacleExtremeCase2();
-    startServosForward();
+    avoidObstacleExtremeCase2();//doesn't try to do alignment on right side of obstacle, hard codes around the board to front side of board
+  //ends parallel to board past obstacle, but farther away than general case
+
+    startServosForward();//hard code to go past board without alignment
     while (irRightSensorDetect())
     {
       delay(IR_DELAY_TIME);
     }  // While board is there keep going forward
-    turnExtraLongCorner();
+    turnExtraLongCorner();//right turn, forward, right turn. ends parallel to board on front side 
   }
 
   turnPivotRight();
   tryToHitTheBoard(); // MASON FLAG
+  //traverse length of board front side
   startServosForward();
   startMeasuringWallTime = millis(); //to measure length of board time
   while (irRightSensorDetect())
@@ -191,7 +215,7 @@ void setup() {
   
   deltaBoardLengthTime = getTimeSince(startMeasuringWallTime);
   alignHitting();
-  
+  //second time around the left corner
   turnCorner();
   roundedThirdCornerTime = millis();
   bool cupFound = true;
@@ -199,6 +223,7 @@ void setup() {
   {
     if (deltaFindCupTime + 1000 < getTimeSince(roundedThirdCornerTime)) // the cup is not there
     {
+      delay(500);
       stopServos();
       beepFiveTimes();
       cupFound = false;
@@ -207,20 +232,37 @@ void setup() {
     delay(IR_DELAY_TIME);
     
   }
-  if (cupFound) // For case: The cup is still there
+  
+  if (cupFound) // For case: The cup is still there. Move past obstacle and go home
   {
     stopServos();
     beepTwoTimes();
-    avoidObstacle();
-    startServosForward(); 
-    while (irRightSensorDetect())
+
+    if(deltaFindCupTime < 6000) //for general case. deltaFindCupTime is constant from first time detecting obstacle
     {
-      delay(IR_DELAY_TIME);
-    }  // While board is there keep going forward
     
-    alignHitting(); // TAG
+      avoidObstacle();     // Avoids obstacle and sets rover parallel to board.
+      startServosForward(); 
+      while (irRightSensorDetect())
+      {
+        delay(IR_DELAY_TIME);
+      }  // While board is there keep going forward
     
-    turnLongCorner();
+    
+      alignHitting(); //TAG
+      turnLongCorner();
+    }
+    else //for extreme case 2 (cup is near end of board)
+    {
+      avoidObstacleExtremeCase2();
+      startServosForward();
+      while (irRightSensorDetect())
+      {
+        delay(IR_DELAY_TIME);
+      }  // While board is there keep going forward
+      turnExtraLongCorner();
+    }
+    
     
     turnPivotRight();
     tryToHitTheBoard(); // MASON FLAG
@@ -228,7 +270,7 @@ void setup() {
     lastMeasuringWallTime = millis();
     while(1) // move forwards until perpendicular to the starting zone
     {
-      if (deltaBoardLengthTime - deltaTimeToFirstCorner - 750 < getTimeSince(lastMeasuringWallTime))
+      if (deltaBoardLengthTime - deltaTimeToFirstCorner - 500 < getTimeSince(lastMeasuringWallTime)) // offset used to be -750
         break;
     }
     stopServos();
@@ -247,6 +289,7 @@ void setup() {
     //This code uses the front sensors to determine when it has hit the backdrop and is home.
     while (!whiskerFrontSensorDetect());    //Continue until whisker is triggered
     stopServos();
+    delay(500);
     startServosBackward();
     delay(200);
     stopServos();
@@ -306,22 +349,22 @@ void turnLongCorner()
   delay(1000); //Continue Driving forward a bit
   turnPivotRight();
   startServosForward();
-  delay(3000); //Get to the other side of the board
+  delay(2000); //Get to the other side of the board (used to be 3000)
   turnPivotRight();    
   startServosForward();
-  delay(1500); // Drive forward so that the sensor will see the board.
+  delay(750); // Drive forward so that the sensor will see the board. (used to be 1500)
 }
 
 void turnExtraLongCorner()
 {
   startServosForward();
-  delay(1000); //Continue Driving forward a bit
+  delay(500); //Continue Driving forward a bit (used to be 1000)
   turnPivotRight();
   startServosForward();
-  delay(5000); //Get to the other side of the board
+  delay(3750); //Get to the other side of the board (used to be 5000)
   turnPivotRight();    
   startServosForward();
-  delay(1500); // Drive forward so that the sensor will see the board.
+  delay(1500); // Drive forward so that the sensor will see the board.(used to be 1500)
 }
 
 
@@ -331,13 +374,13 @@ void avoidObstacle()
   delay(200);
   turnPivotLeft();
   startServosForward();
-  delay(BOX_SIZE/2);
+  delay(600);//used to be 1000
   turnPivotRight();
   startServosForward();
-  delay(BOX_SIZE);
+  delay(2000);//used to be 2000
   turnPivotRight();
   startServosForward();
-  delay(BOX_SIZE*2/5);
+  delay(555);//used to be 800
   tryToHitTheBoard();
 }
 
@@ -347,7 +390,7 @@ void avoidObstacleExtremeCase2()
   delay(200);
   turnPivotLeft();
   startServosForward();
-  delay(BOX_SIZE/2);
+  delay(600); // used to be 2000
   turnPivotRight();
   startServosForward();
 }
