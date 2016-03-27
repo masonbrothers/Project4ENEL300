@@ -26,7 +26,7 @@
 Servo servoLeft;
 Servo servoRight;
 
-double allignment = 0.93; 
+double allignment = 0.94; 
 //straight alignment factor 0.89@7.3v, 0.95@7.28v
 //
 //Higher values make left motor stronger (makes it veer right)
@@ -237,7 +237,7 @@ void setup() {
   deltaBoardLengthTime = getTimeSince(startMeasuringWallTime);
   alignHitting();
   //second time around the left corner
-  turnCorner();
+  turnCorner();//goes forwards after turning corner
   roundedThirdCornerTime = millis();
   bool cupFound = true;
 //second time around
@@ -248,8 +248,60 @@ void setup() {
     alignHittingStart();
     startServosForward();
     roundedThirdCornerTime = millis(); //rewrite roundedThirdCornerTime if not extreme case 1
+
+    //******
+    while(!irFrontSensorDetect()) //Search for cup
+  {
+    if (deltaFindCupTime + 1000 < getTimeSince(roundedThirdCornerTime)) // the cup is might not be there
+    {
+      cupFound=false;
+      //reverse and realign just to double check that the cup is gone
+      if(deltaFindCupTime>3000){//## if(too close for a double check)
+      startServosBackward();
+      delay(1000); //reverse 1000
+      stopServos();
+      delay(500);
+      turnPivotBackwardRight();//turn towards the board
+      alignAndTurn();//align
+      //search for another 1500
+      int doubleCheckTime=millis();//save time right after alignment
+      startServosForward();
+        while(getTimeSince(doubleCheckTime)<1500)
+          {//give it a chance to find the cup in 1500ms
+  
+            if(irFrontSensorDetect())
+              {
+                cupFound=true;
+                break;
+              } 
+          }
+        break;
+        }else{// end the if statement ## 
+          break;
+        }
+      }
+      
+     
+       
+    delay(IR_DELAY_TIME);
+    
   }
   
+  }else{//for extremecase1
+    //if cup not found within deltaFindCupTime + 1000, then cup not found
+    while(!irFrontSensorDetect()) //Search for cup
+    {
+      if (deltaFindCupTime + 1000 < getTimeSince(roundedThirdCornerTime)) // the cup is might not be there
+      {
+        cupFound=false; 
+        break;
+      }
+      
+    delay(IR_DELAY_TIME);
+    
+    }
+  }
+  /*
   while(!irFrontSensorDetect()) //Search for cup
   {
     if (deltaFindCupTime + 1000 < getTimeSince(roundedThirdCornerTime)) // the cup is might not be there
@@ -285,6 +337,7 @@ void setup() {
     delay(IR_DELAY_TIME);
     
   }
+  */
   
    if(!cupFound){
       delay(500);//allows it to get nearer to the cup
@@ -298,7 +351,7 @@ void setup() {
     stopServos();
     beepTwoTimes();
 
-    if(deltaFindCupTime < 6000) //for general case. deltaFindCupTime is constant from first time detecting obstacle
+    if(deltaFindCupTime < 4500) //for general case. deltaFindCupTime is constant from first time detecting obstacle
     {
     
       avoidObstacle();     // Avoids obstacle and sets rover parallel to board.
