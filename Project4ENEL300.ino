@@ -16,18 +16,21 @@
 #define LEFT_DIME_TURNING_TIME 630   
 
 
-#define RIGHT_PIVOT_TURNING_TIME 1260 // CALIBRATION TEST 1
-#define LEFT_PIVOT_TURNING_TIME 1240  // CALIBRATION TEST 2
+#define RIGHT_PIVOT_TURNING_TIME 1310 // CALIBRATION TEST 1 @7.3v
+#define LEFT_PIVOT_TURNING_TIME 1250  // CALIBRATION TEST 2 @7.3v
 #define BOX_SIZE 2000
 #define IR_DELAY_TIME 10
 
-//#define TESTING
+#define TESTING
 
 Servo servoLeft;
 Servo servoRight;
 
-double allignment = 0.89;  //Higher values make left motor stronger (makes it veer right)
-                           //Lower values make right motor stronger (makes it veer left)
+double allignment = 0.92; 
+//straight alignment factor 0.89@7.3v, 0.95@7.28v
+//
+//Higher values make left motor stronger (makes it veer right)
+//Lower values make right motor stronger (makes it veer left) 
 
 void calibration()
 {
@@ -46,6 +49,7 @@ void calibration()
     delay(1000);
   }
   */
+  /*
   for (i = 0; i < 4; i++) // CALIBRATION TEST 3
   {
     turnPivotBackwardRight();
@@ -57,12 +61,16 @@ void calibration()
     turnPivotBackwardLeft();
     delay(1000);
   }
-
+*/
   /*
   beepTwoTimes();
   delay(3000);
   beepFiveTimes();
   */
+  
+  startServosForward();
+  delay(9001);
+  stopServos();
 
 }
 
@@ -108,7 +116,7 @@ void setup() {
   avoidObstacle();
   */
   //calibration();
-  //tryToHitTheBoard();
+  tryToHitTheBoardBeta();
   while (1)
   {
     Serial.print("RightIR: ");
@@ -120,7 +128,7 @@ void setup() {
     Serial.print("\tRightWh: ");
     Serial.print(whiskerRightSensorDetect());
     Serial.print("\n");
-    if (irRightSensorDetect())
+    if (irFrontSensorDetect())
     {
       digitalWrite(VISIBLE_LED_PIN, HIGH);
     }
@@ -358,7 +366,7 @@ void alignHittingStart()//for the start of the board when not extreme case 1 . r
   delay(500);
   //startServosBackward();
   //delay(800);
-  tryToHitTheBoard(); // MASON FLAG
+  tryToHitTheBoardSpecialShort(); // special short is for a shorter backup to be closer to the cup when parallel to the board
 }
 
 
@@ -425,8 +433,88 @@ void avoidObstacleExtremeCase2()
   turnPivotRight();
   startServosForward();
 }
+void tryToHitTheBoardBeta()//premise for this function which replaces tryToHitTheBoard is that it reverses until the whiskers don't touch
+{
+  while(1){
+setServosNoFactor(20,20);//go forward slowly
+while((!whiskerLeftSensorDetect())&&(!whiskerRightSensorDetect()));//neither whisker touches
 
+delay(100);
+stopServos();
+bool left = whiskerLeftSensorDetect();
+bool right = whiskerRightSensorDetect();
+if (left&&right)
+{
+break; 
+}    
+else if(left)
+{
+  //backup and turn left
+      setServosNoFactor(-20,-20);//reverse
+      while(whiskerLeftSensorDetect());//while left sensor is still detecting
+      delay(100);
+      setServosNoFactor(-20,20);//turn left
+      delay(100);
+      stopServos();
+} else if(right)
+{
+  //backup and turn right
+      setServosNoFactor(-20,-20);//reverse
+      while(whiskerRightSensorDetect());//while left sensor is still detecting
+      delay(100);
+      setServosNoFactor(20,-20);//turn right
+      delay(100);
+      stopServos();
+}
+  
+  } 
+}
 void tryToHitTheBoard()//needs to start facing the board, ends parallel in right direction
+{
+  setServosNoFactor(20,20);//go forward slowly
+  while ((!whiskerLeftSensorDetect())&&(!whiskerRightSensorDetect()));
+  stopServos();//stop when either hits
+  while(1)
+  {
+    bool left = whiskerLeftSensorDetect();
+    bool right = whiskerRightSensorDetect();
+    if((!whiskerLeftSensorDetect())&&(!whiskerRightSensorDetect()))
+    {
+      delay(100);
+      if (whiskerLeftSensorDetect()&&whiskerRightSensorDetect())
+        break;
+    }
+    if (left&&right)
+      break;
+    else if (left)
+    {
+      setServosNoFactor(-20,-20);//reverse
+      delay(300);
+      setServosNoFactor(-20,20);//turn left
+      delay(150);//used to be 200
+    }
+    else if (right)
+    {
+      setServosNoFactor(-20,-20);//reverse
+      delay(300);
+      setServosNoFactor(20,-20);//turn right
+      delay(150);//used to be 200
+
+    }
+    setServosNoFactor(20,20);//go forward
+    delay(300);
+    
+    
+  }
+  stopServos();
+  delay(500);
+  startServosBackward(); // Prevents the robot from hitting the board.
+  delay(800);//amount of time robot goes back after aligning
+  stopServos();
+  turnPivotLeft();
+}
+
+void tryToHitTheBoardSpecialShort()//special hitting the board for non-extreme case 1. moves back less to be closer to the board when parallel
 {
   setServosNoFactor(20,20);
   while ((!whiskerLeftSensorDetect())&&(!whiskerRightSensorDetect()));
@@ -466,7 +554,7 @@ void tryToHitTheBoard()//needs to start facing the board, ends parallel in right
   stopServos();
   delay(500);
   startServosBackward(); // Prevents the robot from hitting the board.
-  delay(1000);
+  delay(600);//amount of time robot goes back after aligning
   stopServos();
   turnPivotLeft();
 }
@@ -511,16 +599,22 @@ void turnDimeLeft()
 
 void turnPivotLeft()
 {
+  stopServos();
+  delay(200);
   startPivotTurningLeft();
   delay(LEFT_PIVOT_TURNING_TIME);
   stopServos();
+  delay(200);
 }
 
 void turnPivotBackwardLeft()
 {
+  stopServos();
+  delay(200);
   startPivotTurningBackwardLeft();
   delay(RIGHT_PIVOT_TURNING_TIME);
   stopServos();
+  delay(200);
 }
 
 void startPivotTurningLeft()
@@ -547,16 +641,22 @@ void startDimeTurningLeft()
 
 void turnPivotRight()
 {
+  stopServos();
+  delay(200);
   startPivotTurningRight();
   delay(RIGHT_PIVOT_TURNING_TIME);
   stopServos();
+  delay(200);
 }
 
 void turnPivotBackwardRight()
 {
+  stopServos();
+  delay(200);
   startPivotTurningBackwardRight();
   delay(LEFT_PIVOT_TURNING_TIME);
   stopServos();
+  delay(200);
 }
 
 void startPivotTurningRight()
