@@ -21,16 +21,17 @@
 #define BOX_SIZE 2000
 #define IR_DELAY_TIME 10
 
-#define TESTING
+//#define TESTING
 
 Servo servoLeft;
 Servo servoRight;
 
-double allignment = 0.92; 
+double allignment = 0.93; 
 //straight alignment factor 0.89@7.3v, 0.95@7.28v
 //
 //Higher values make left motor stronger (makes it veer right)
 //Lower values make right motor stronger (makes it veer left) 
+
 
 void calibration()
 {
@@ -74,6 +75,7 @@ void calibration()
 
 }
 
+
 void setup() {
   // put your setup code here, to run once:
   //STARTUP
@@ -116,7 +118,8 @@ void setup() {
   avoidObstacle();
   */
   //calibration();
-  tryToHitTheBoardBeta();
+  //tryToHitTheBoardBeta();
+  alignAndTurn();
   while (1)
   {
     Serial.print("RightIR: ");
@@ -222,7 +225,7 @@ void setup() {
   }
 
   turnPivotRight();
-  tryToHitTheBoard(); // MASON FLAG
+  alignAndTurn(); // MASON FLAG
   //traverse length of board front side
   startServosForward();
   startMeasuringWallTime = millis(); //to measure length of board time
@@ -249,18 +252,47 @@ void setup() {
   
   while(!irFrontSensorDetect()) //Search for cup
   {
-    if (deltaFindCupTime + 1000 < getTimeSince(roundedThirdCornerTime)) // the cup is not there
+    if (deltaFindCupTime + 1000 < getTimeSince(roundedThirdCornerTime)) // the cup is might not be there
     {
-      delay(500);
+      cupFound=false;
+      //reverse and realign just to double check that the cup is gone
+      if(!isExtremeCase1&&(deltaFindCupTime>3000)){//## if(too close for a double check)
+      startServosBackward();
+      delay(1000); //reverse 1000
       stopServos();
-      beepFiveTimes();
-      cupFound = false;
-      break;
-    }
+      delay(500);
+      turnPivotBackwardRight();//turn towards the board
+      alignAndTurn();//align
+      //search for another 1500
+      int doubleCheckTime=millis();//save time right after alignment
+      startServosForward();
+        while(getTimeSince(doubleCheckTime)<1500)
+          {//give it a chance to find the cup in 1500ms
+  
+            if(irFrontSensorDetect())
+              {
+                cupFound=true;
+                break;
+              } 
+          }
+        break;
+        }// end the if statement ##
+        
+      }
+      
+     
+       
     delay(IR_DELAY_TIME);
     
   }
   
+   if(!cupFound){
+      delay(500);//allows it to get nearer to the cup
+      stopServos();
+      beepFiveTimes();
+      //break;
+      }
+      
   if (cupFound) // For case: The cup is still there. Move past obstacle and go home
   {
     stopServos();
@@ -293,7 +325,7 @@ void setup() {
     
     
     turnPivotRight();
-    tryToHitTheBoard(); // MASON FLAG
+    alignAndTurn(); // MASON FLAG
     startServosForward(); 
     lastMeasuringWallTime = millis();
     while(1) // move forwards until perpendicular to the starting zone
@@ -354,7 +386,7 @@ void alignHitting()//for the edge of the board. reverses before aligning
   delay(500);
   //startServosBackward();
   //delay(800);
-  tryToHitTheBoard(); // MASON FLAG
+  alignAndTurn(); // MASON FLAG
 }
 
 void alignHittingStart()//for the start of the board when not extreme case 1 . reverses before aligning
@@ -366,7 +398,7 @@ void alignHittingStart()//for the start of the board when not extreme case 1 . r
   delay(500);
   //startServosBackward();
   //delay(800);
-  tryToHitTheBoardSpecialShort(); // special short is for a shorter backup to be closer to the cup when parallel to the board
+  alignAndTurn(); // special short is for a shorter backup to be closer to the cup when parallel to the board
 }
 
 
@@ -420,7 +452,7 @@ void avoidObstacle()
   turnPivotRight();
   startServosForward();
   delay(555);//used to be 800
-  tryToHitTheBoard();
+  alignAndTurn();
 }
 
 void avoidObstacleExtremeCase2()
@@ -514,6 +546,17 @@ void tryToHitTheBoard()//needs to start facing the board, ends parallel in right
   turnPivotLeft();
 }
 
+void alignAndTurn()
+{
+  tryToHitTheBoardBeta();
+  delay(500);
+  startServosBackward(); // back up after aligning
+  delay(800);
+  stopServos();
+  turnPivotLeft();
+  delay(100);
+}
+
 void tryToHitTheBoardSpecialShort()//special hitting the board for non-extreme case 1. moves back less to be closer to the board when parallel
 {
   setServosNoFactor(20,20);
@@ -525,7 +568,7 @@ void tryToHitTheBoardSpecialShort()//special hitting the board for non-extreme c
     bool right = whiskerRightSensorDetect();
     if((!whiskerLeftSensorDetect())&&(!whiskerRightSensorDetect()))
     {
-      delay(100);
+      delay(80);
       if (whiskerLeftSensorDetect()&&whiskerRightSensorDetect())
         break;
     }
