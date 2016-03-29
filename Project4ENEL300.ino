@@ -66,7 +66,7 @@ void loop() {
   // put your setup code here, to run once:
   //STARTUP
 
-
+  pinMode(VISIBLE_LED_PIN, OUTPUT);
   //ROBOT: goes from the starting board to the board.
   switch(state)
   {
@@ -76,6 +76,7 @@ void loop() {
       isExtremeCase1 = false;
       isLapOne = true;
       state = FIND_THE_BOARD_STATE;
+      break;
     case FIND_THE_BOARD_STATE:
       startingTime = millis();                                                  //Time at the begining of the test
       startServosForward();                                                     //Starts going forward towards board
@@ -89,6 +90,7 @@ void loop() {
       delay(1000);
       turnPivotLeft();                                                          //Turns left to align robot with board. It is on the side without the cup.
       state = GO_TO_FIRST_EDGE_STATE;
+      break;
     case GO_TO_FIRST_EDGE_STATE:
       startServosForward();  
       toEdgeOfBoardFirstTime = millis();                                        //Gets the time. This time is when it starts moving foward to 
@@ -101,6 +103,7 @@ void loop() {
       //ROBOT: got to end of 1st edge, aligned, proceeding to next obstacle side
       turnCorner();
       state = FIND_CUP_STATE;
+      break;
     case FIND_CUP_STATE: 
       startServosForward();
       roundedFirstCornerTime = millis();//saves the time when it first makes it around the 1st corner. may be overwritten if not extreme case 1
@@ -139,7 +142,7 @@ void loop() {
         state = AVOID_CUP_EXTREME_CASE_TWO;
       }
 
-
+      break;
     case AVOID_CUP_GENERAL_AND_EXTREME_CASE_ONE:   
       avoidObstacle();     // Avoids obstacle and sets rover parallel to board(using align feature)
       startServosForward(); 
@@ -152,7 +155,7 @@ void loop() {
       alignHitting(); //aligning on right end of board (1st time)
       turnLongCorner();
       state = GO_ACROSS_BOARD_STATE;
-
+      break;
     case AVOID_CUP_EXTREME_CASE_TWO:
       avoidObstacleExtremeCase2();//doesn't try to do alignment on right side of obstacle, hard codes around the board to front side of board
       //ends parallel to board past obstacle, but farther away than general case
@@ -164,7 +167,7 @@ void loop() {
       }  // While board is there keep going forward
       turnExtraLongCorner();//right turn, forward, right turn. ends parallel to board on front side 
       state = GO_ACROSS_BOARD_STATE;
-
+      break;
     case GO_ACROSS_BOARD_STATE:
       turnPivotRight();
       alignAndTurn();
@@ -182,7 +185,7 @@ void loop() {
       turnCorner();//goes forwards after turning corner
       isLapOne = false;
       state = TRY_TO_REFIND_CUP_STATE;
-
+      break;
     case TRY_TO_REFIND_CUP_STATE:
       roundedThirdCornerTime = millis();
       cupFound = true;
@@ -247,15 +250,6 @@ void loop() {
         }
       }
 
-
-
-
-
-
-
-
-
-
       if(!cupFound)
       {
         delay(500);//allows it to get nearer to the cup
@@ -293,7 +287,8 @@ void loop() {
         turnPivotRight();
         //asdfafsddsf
       }
-
+      state = GO_HOME_STATE;
+      break;
     case GO_HOME_STATE:
       alignAndTurn(); //MASON FLAG
       startServosForward(); 
@@ -315,9 +310,27 @@ void loop() {
       delay(200);
       stopServos();
       state = EXIT_STATE;
+      break;
     case EXIT_STATE:
       stopServos();
+      break;
+
+      
+  default:
+    for (int i = 0; i < 5; i++)
+    {
+      digitalWrite(VISIBLE_LED_PIN, HIGH);
+      delay(300);
+      digitalWrite(VISIBLE_LED_PIN, LOW);
+      delay(300);
+    }
+    break;
+
+
+
+
  } //End of switch
+
 
   //ROBOT: head towards obstacle first time
   
