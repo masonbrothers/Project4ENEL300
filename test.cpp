@@ -46,6 +46,7 @@ int lastMeasuringWallTime;
 int lastStretchTime;
 bool isExtremeCase1;
 bool isLapOne;
+bool cupFound;
 
 int state;
 #define ENTRY_STATE 0
@@ -179,12 +180,12 @@ void loop() {
       alignHitting();
       //second time around the left corner
       turnCorner();//goes forwards after turning corner
-      bool isLapOne = false;
+      isLapOne = false;
       state = TRY_TO_REFIND_CUP_STATE;
 
     case TRY_TO_REFIND_CUP_STATE:
       roundedThirdCornerTime = millis();
-      bool cupFound = true;
+      cupFound = true;
       //second time around
       if(!isExtremeCase1)//general case
       {
@@ -292,9 +293,9 @@ void loop() {
         turnPivotRight();
         //asdfafsddsf
       }
-      
-    case GO_HOME_STATE;
-      alignAndTurn(); // MASON FLAG
+
+    case GO_HOME_STATE:
+      alignAndTurn(); //MASON FLAG
       startServosForward(); 
       lastMeasuringWallTime = millis();
       while(1) // move forwards until perpendicular to the starting zone

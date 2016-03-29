@@ -46,6 +46,7 @@ int lastMeasuringWallTime;
 int lastStretchTime;
 bool isExtremeCase1;
 bool isLapOne;
+bool cupFound;
 
 int state;
 #define ENTRY_STATE 0
@@ -150,7 +151,7 @@ void loop() {
       
       alignHitting(); //aligning on right end of board (1st time)
       turnLongCorner();
-      state = GO_ACCROSS_BOARD_STATE;
+      state = GO_ACROSS_BOARD_STATE;
 
     case AVOID_CUP_EXTREME_CASE_TWO:
       avoidObstacleExtremeCase2();//doesn't try to do alignment on right side of obstacle, hard codes around the board to front side of board
@@ -162,7 +163,7 @@ void loop() {
         delay(IR_DELAY_TIME);
       }  // While board is there keep going forward
       turnExtraLongCorner();//right turn, forward, right turn. ends parallel to board on front side 
-      state = GO_ACCROSS_BOARD_STATE;
+      state = GO_ACROSS_BOARD_STATE;
 
     case GO_ACROSS_BOARD_STATE:
       turnPivotRight();
@@ -179,12 +180,12 @@ void loop() {
       alignHitting();
       //second time around the left corner
       turnCorner();//goes forwards after turning corner
-      bool isLapOne = false;
+      isLapOne = false;
       state = TRY_TO_REFIND_CUP_STATE;
 
     case TRY_TO_REFIND_CUP_STATE:
       roundedThirdCornerTime = millis();
-      bool cupFound = true;
+      cupFound = true;
       //second time around
       if(!isExtremeCase1)//general case
       {
@@ -291,9 +292,10 @@ void loop() {
         }
         turnPivotRight();
         //asdfafsddsf
-      }   
-    case GO_HOME_STATE;
-      alignAndTurn(); // MASON FLAG
+      }
+
+    case GO_HOME_STATE:
+      alignAndTurn(); //MASON FLAG
       startServosForward(); 
       lastMeasuringWallTime = millis();
       while(1) // move forwards until perpendicular to the starting zone
