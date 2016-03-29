@@ -255,7 +255,8 @@ void loop() {
         delay(500);//allows it to get nearer to the cup
         stopServos();
         beepFiveTimes();
-        //break;
+        state = EXIT_STATE;
+        break; //MING !!!!!!
       }
           
       if (cupFound) // For case: The cup is still there. Move past obstacle and go home
@@ -286,8 +287,10 @@ void loop() {
         }
         turnPivotRight();
         //asdfafsddsf
+        state = GO_HOME_STATE;
+        break; // MING!!!!!!
       }
-      state = GO_HOME_STATE;
+
       break;
     case GO_HOME_STATE:
       alignAndTurn(); //MASON FLAG
