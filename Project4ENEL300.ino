@@ -13,7 +13,7 @@
 #define VISIBLE_LED_PIN           12
 
 #define RIGHT_DIME_TURNING_TIME  610 
-#define LEFT_DIME_TURNING_TIME  630   
+#define LEFT_DIME_TURNING_TIME   630   
 
 
 #define RIGHT_PIVOT_TURNING_TIME 1310 // CALIBRATION TEST 1 @7.3v
@@ -58,8 +58,13 @@ int state;
 #define AVOID_CUP_EXTREME_CASE_TWO 6
 #define GO_ACROSS_BOARD_STATE 7
 #define TRY_TO_REFIND_CUP_STATE 8
+#define REFIND_CUP_EXTREME_CASE_ONE 11
+#define REFIND_CUP_GENERAL_CASE_OR_EXTREME_CASE_TWO 12
+#define MAKE_CUP_CHOICE_STATE 13
+#define CUP_FOUND_STATE 14
+#define CUP_NOT_FOUND_STATE 15
 #define GO_HOME_STATE 19
-#define EXIT_STATE 20
+#define TERMINATE_STATE 20
 
 
 void loop() {
@@ -154,7 +159,10 @@ void loop() {
       
       alignHitting(); //aligning on right end of board (1st time)
       turnLongCorner();
-      state = GO_ACROSS_BOARD_STATE;
+      if (isLapOne)
+        state = GO_ACROSS_BOARD_STATE;
+      else
+        state = GO_HOME_STATE;
       break;
     case AVOID_CUP_EXTREME_CASE_TWO:
       avoidObstacleExtremeCase2();//doesn't try to do alignment on right side of obstacle, hard codes around the board to front side of board
@@ -166,7 +174,10 @@ void loop() {
         delay(IR_DELAY_TIME);
       }  // While board is there keep going forward
       turnExtraLongCorner();//right turn, forward, right turn. ends parallel to board on front side 
-      state = GO_ACROSS_BOARD_STATE;
+      if (isLapOne)
+        state = GO_ACROSS_BOARD_STATE;
+      else
+        state = GO_HOME_STATE;
       break;
     case GO_ACROSS_BOARD_STATE:
       turnPivotRight();
@@ -192,20 +203,74 @@ void loop() {
       //second time around
       if(!isExtremeCase1)//general case
       {
-        delay(1500);//move forwards to align (same amount as first time around for general case only)
-        stopServos();
-        alignHittingStart();
-        startServosForward();
-        roundedThirdCornerTime = millis(); //rewrite roundedThirdCornerTime if not extreme case 1
+        state = REFIND_CUP_GENERAL_CASE_OR_EXTREME_CASE_TWO;
+      }
+      else
+      {//for extremecase1
+        //if cup not found within deltaFindCupTime + 1000, then cup not found
+        state = REFIND_CUP_EXTREME_CASE_ONE;
+      }
+      break;
 
-        //******
-        while(!irFrontSensorDetect()) //Search for cup
+    case CUP_FOUND_STATE:
+      stopServos();
+      beepTwoTimes();
+
+      if(deltaFindCupTime < 4500) //for general case. deltaFindCupTime is constant from first time detecting obstacle
+      {
+        avoidObstacle();     // Avoids obstacle and sets rover parallel to board.
+        startServosForward(); 
+        while (irRightSensorDetect())
         {
-          if (deltaFindCupTime + 1000 < getTimeSince(roundedThirdCornerTime)) // the cup is might not be there
-          {
-            cupFound=false;
-            //reverse and realign just to double check that the cup is gone
-            if(deltaFindCupTime>3000){//## if(too close for a double check)
+          delay(IR_DELAY_TIME);
+        }  // While board is there keep going forward
+        alignHitting(); //TAG
+        turnLongCorner();
+      }
+      else //for extreme case 2 (cup is near end of board)
+      {
+        avoidObstacleExtremeCase2();
+        startServosForward();
+        while (irRightSensorDetect())
+        {
+          delay(IR_DELAY_TIME);
+        }  // While board is there keep going forward
+        turnExtraLongCorner();
+      }
+      
+      //asdfafsddsf
+      state = GO_HOME_STATE;
+      break;
+
+    case REFIND_CUP_EXTREME_CASE_ONE:
+      while(!irFrontSensorDetect()) //Search for cup
+      {
+        if (deltaFindCupTime + 1000 < getTimeSince(roundedThirdCornerTime)) // the cup is might not be there
+        {
+          cupFound=false; 
+          break;
+        }     
+      delay(IR_DELAY_TIME);
+      }
+      state = MAKE_CUP_CHOICE_STATE;
+      break;
+
+    case REFIND_CUP_GENERAL_CASE_OR_EXTREME_CASE_TWO:
+      delay(1500);//move forwards to align (same amount as first time around for general case only)
+      stopServos();
+      alignHittingStart();
+      startServosForward();
+      roundedThirdCornerTime = millis(); //rewrite roundedThirdCornerTime if not extreme case 1
+
+      //******
+      while(!irFrontSensorDetect()) //Search for cup
+      {
+        if (deltaFindCupTime + 1000 < getTimeSince(roundedThirdCornerTime)) // the cup is might not be there
+        {
+          cupFound=false;
+          //reverse and realign just to double check that the cup is gone
+          if(deltaFindCupTime>3000)
+          {//## if(too close for a double check)
             startServosBackward();
             delay(1000); //reverse 1000
             stopServos();
@@ -221,7 +286,7 @@ void loop() {
               {
                 cupFound=true;
                 break;
-              } 
+              }
             }
             break;
           }
@@ -232,67 +297,25 @@ void loop() {
         }
         delay(IR_DELAY_TIME);
       }
-      
-      }
-      else
-      {//for extremecase1
-        //if cup not found within deltaFindCupTime + 1000, then cup not found
-        while(!irFrontSensorDetect()) //Search for cup
-        {
-          if (deltaFindCupTime + 1000 < getTimeSince(roundedThirdCornerTime)) // the cup is might not be there
-          {
-            cupFound=false; 
-            break;
-          }
-          
-        delay(IR_DELAY_TIME);
-        
-        }
-      }
-
-      if(!cupFound)
-      {
-        delay(500);//allows it to get nearer to the cup
-        stopServos();
-        beepFiveTimes();
-        state = EXIT_STATE;
-        break; //MING !!!!!!
-      }
-          
-      if (cupFound) // For case: The cup is still there. Move past obstacle and go home
-      {
-        stopServos();
-        beepTwoTimes();
-
-        if(deltaFindCupTime < 4500) //for general case. deltaFindCupTime is constant from first time detecting obstacle
-        {
-          avoidObstacle();     // Avoids obstacle and sets rover parallel to board.
-          startServosForward(); 
-          while (irRightSensorDetect())
-          {
-            delay(IR_DELAY_TIME);
-          }  // While board is there keep going forward
-          alignHitting(); //TAG
-          turnLongCorner();
-        }
-        else //for extreme case 2 (cup is near end of board)
-        {
-          avoidObstacleExtremeCase2();
-          startServosForward();
-          while (irRightSensorDetect())
-          {
-            delay(IR_DELAY_TIME);
-          }  // While board is there keep going forward
-          turnExtraLongCorner();
-        }
-        turnPivotRight();
-        //asdfafsddsf
-        state = GO_HOME_STATE;
-        break; // MING!!!!!!
-      }
-
+      state = MAKE_CUP_CHOICE_STATE;
       break;
+
+    case MAKE_CUP_CHOICE_STATE:
+      if (cupFound) // For case: The cup is still there. Move past obstacle and go home
+        state = CUP_FOUND_STATE;
+      else
+        state = CUP_NOT_FOUND_STATE;
+      break;
+
+    case CUP_NOT_FOUND_STATE:
+      delay(500);//allows it to get nearer to the cup
+      stopServos();
+      beepFiveTimes();
+      state = TERMINATE_STATE;
+      break;
+
     case GO_HOME_STATE:
+      turnPivotRight();
       alignAndTurn(); //MASON FLAG
       startServosForward(); 
       lastMeasuringWallTime = millis();
@@ -312,14 +335,15 @@ void loop() {
       startServosBackward();
       delay(200);
       stopServos();
-      state = EXIT_STATE;
+      state = TERMINATE_STATE;
       break;
-    case EXIT_STATE:
+    case TERMINATE_STATE:
       stopServos();
       break;
 
       
   default:
+    // Problem: Blink Light 5 times
     for (int i = 0; i < 5; i++)
     {
       digitalWrite(VISIBLE_LED_PIN, HIGH);
@@ -720,7 +744,7 @@ int irDetect(int irLedPin, int irReceiverPin, long frequency)
 {
   tone(irLedPin, frequency, 8);              // IRLED 38 kHz for at least 1 ms
   delay(1);                                  // Wait 1 ms
-  int ir = !digitalRead(irReceiverPin);       // IR receiver -> ir variable
+  int ir = !digitalRead(irReceiverPin);      // IR receiver -> ir variable
   delay(1);                                  // Down time before recheck
   return ir;                                 // Return 1 no detect, 0 detect
 }  
