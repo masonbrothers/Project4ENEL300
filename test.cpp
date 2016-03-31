@@ -13,7 +13,7 @@
 #define VISIBLE_LED_PIN           12
 
 #define RIGHT_DIME_TURNING_TIME  610 
-#define LEFT_DIME_TURNING_TIME  630   
+#define LEFT_DIME_TURNING_TIME   630   
 
 
 #define RIGHT_PIVOT_TURNING_TIME 1310 // CALIBRATION TEST 1 @7.3v
@@ -23,7 +23,7 @@
 Servo servoLeft;
 Servo servoRight;
 
-double allignment = 0.94; 
+double allignment = 0.92; 
 //straight alignment factor 0.89@7.3v, 0.95@7.28v
 
 //Higher values make left motor stronger (makes it veer right)
@@ -60,11 +60,11 @@ int state;
 #define TRY_TO_REFIND_CUP_STATE 8
 #define REFIND_CUP_EXTREME_CASE_ONE 11
 #define REFIND_CUP_GENERAL_CASE_OR_EXTREME_CASE_TWO 12
-#define MAKE_CUP_CHOICE_STATE 13
 #define CUP_FOUND_STATE 14
 #define CUP_NOT_FOUND_STATE 15
-#define GO_HOME_STATE 19
-#define TERMINATE_STATE 20
+#define GO_HOME_PART_A_STATE 19
+#define GO_HOME_PART_B_STATE 20
+#define TERMINATE_STATE 21
 
 
 void loop() {
@@ -76,6 +76,7 @@ void loop() {
   switch(state)
   {
     case ENTRY_STATE:
+    //do: short pause
       delay(1000);                                                              // Gives a bit of time for us to position the robot before it starts moving
       attachMotors();
       isExtremeCase1 = false;
@@ -84,25 +85,25 @@ void loop() {
       break;
     case FIND_THE_BOARD_STATE:
       startingTime = millis();                                                  //Time at the begining of the test
+      //Do: check for board and go forward
       startServosForward();                                                     //Starts going forward towards board
       while (!whiskerFrontSensorDetect());                                      //Continue until whisker is triggered
       deltaLeaveStartZoneTime = getTimeSince(startingTime);                     //Get the change in time between starting to move and touching the wall 
       stopServos();
+      //Exit: Turn left
       delay(500);                                                               //Robot doesn't do anything
       startServosBackward();                                                    //Goes backward. Prevents the robot from hitting the board.
       delay(800);
       stopServos();                                                             //Robot doesn't do anything
       delay(1000);
       turnPivotLeft();                                                          //Turns left to align robot with board. It is on the side without the cup.
+      toEdgeOfBoardFirstTime = millis(); 
       state = GO_TO_FIRST_EDGE_STATE;
       break;
     case GO_TO_FIRST_EDGE_STATE:
-      startServosForward();  
-      toEdgeOfBoardFirstTime = millis();                                        //Gets the time. This time is when it starts moving foward to 
-      while (irRightSensorDetect())                                             //Keep going until the board is there.
-      {
-        delay(IR_DELAY_TIME);
-      }                                                                         //go towards edge of board 1st time
+      //do: move forward and check for edge of board
+      startServosForward();                                                     //Gets the time. This time is when it starts moving foward to 
+      checkForEdgeOfBoard();                                                    //go towards edge of board 1st time
       deltaTimeToFirstCorner = getTimeSince(toEdgeOfBoardFirstTime);            //This saves the time to the first corner from starting near the board.
       alignHitting();
       //ROBOT: got to end of 1st edge, aligned, proceeding to next obstacle side
@@ -112,17 +113,8 @@ void loop() {
     case FIND_CUP_STATE: 
       startServosForward();
       roundedFirstCornerTime = millis();//saves the time when it first makes it around the 1st corner. may be overwritten if not extreme case 1
-     
-      while (getTimeSince(roundedFirstCornerTime) < 1500)
-      {
-        if(irFrontSensorDetect())
-        {
-          isExtremeCase1 = true;
-          break;
-        }
-        delay(IR_DELAY_TIME);
-      }
-      if(!isExtremeCase1)//general case
+      checkForExtremeCase1();
+      if(!isExtremeCase1)// align if not extreme case 1. We thought this is unique enough that it does not require a state
       {
         alignHittingStart();
         roundedFirstCornerTime=millis();//overwrite the rounded first corner time to after it is aligned
@@ -151,33 +143,26 @@ void loop() {
     case AVOID_CUP_GENERAL_AND_EXTREME_CASE_ONE:   
       avoidObstacle();     // Avoids obstacle and sets rover parallel to board(using align feature)
       startServosForward(); 
-      while (irRightSensorDetect())
-      {
-        delay(IR_DELAY_TIME);
-      }  // While board is there keep going forward
-      
+      checkForEdgeOfBoard();
       
       alignHitting(); //aligning on right end of board (1st time)
       turnLongCorner();
       if (isLapOne)
         state = GO_ACROSS_BOARD_STATE;
       else
-        state = GO_HOME_STATE;
+        state = GO_HOME_PART_A_STATE;
       break;
     case AVOID_CUP_EXTREME_CASE_TWO:
       avoidObstacleExtremeCase2();//doesn't try to do alignment on right side of obstacle, hard codes around the board to front side of board
       //ends parallel to board past obstacle, but farther away than general case
 
       startServosForward();//hard code to go past board without alignment
-      while (irRightSensorDetect())
-      {
-        delay(IR_DELAY_TIME);
-      }  // While board is there keep going forward
+      checkForEdgeOfBoard();
       turnExtraLongCorner();//right turn, forward, right turn. ends parallel to board on front side 
       if (isLapOne)
         state = GO_ACROSS_BOARD_STATE;
       else
-        state = GO_HOME_STATE;
+        state = GO_HOME_PART_A_STATE;
       break;
     case GO_ACROSS_BOARD_STATE:
       turnPivotRight();
@@ -185,11 +170,7 @@ void loop() {
       //traverse length of board front side
       startServosForward();
       startMeasuringWallTime = millis(); //to measure length of board time
-      while (irRightSensorDetect())
-      {
-        delay(IR_DELAY_TIME);
-      }  // While board is there keep going forward
-      
+      checkForEdgeOfBoard();
       deltaBoardLengthTime = getTimeSince(startMeasuringWallTime);
       alignHitting();
       //second time around the left corner
@@ -220,10 +201,7 @@ void loop() {
       {
         avoidObstacle();     // Avoids obstacle and sets rover parallel to board.
         startServosForward(); 
-        while (irRightSensorDetect())
-        {
-          delay(IR_DELAY_TIME);
-        }  // While board is there keep going forward
+        checkForEdgeOfBoard();
         alignHitting(); //TAG
         turnLongCorner();
       }
@@ -231,28 +209,20 @@ void loop() {
       {
         avoidObstacleExtremeCase2();
         startServosForward();
-        while (irRightSensorDetect())
-        {
-          delay(IR_DELAY_TIME);
-        }  // While board is there keep going forward
+        checkForEdgeOfBoard();
         turnExtraLongCorner();
       }
       
       //asdfafsddsf
-      state = GO_HOME_STATE;
+      state = GO_HOME_PART_A_STATE;
       break;
 
     case REFIND_CUP_EXTREME_CASE_ONE:
-      while(!irFrontSensorDetect()) //Search for cup
-      {
-        if (deltaFindCupTime + 1000 < getTimeSince(roundedThirdCornerTime)) // the cup is might not be there
-        {
-          cupFound=false; 
-          break;
-        }     
-      delay(IR_DELAY_TIME);
-      }
-      state = MAKE_CUP_CHOICE_STATE;
+      refindCupExtremeCase1();
+      if (cupFound) // For case: The cup is still there. Move past obstacle and go home
+        state = CUP_FOUND_STATE;
+      else
+        state = CUP_NOT_FOUND_STATE;
       break;
 
     case REFIND_CUP_GENERAL_CASE_OR_EXTREME_CASE_TWO:
@@ -263,44 +233,7 @@ void loop() {
       roundedThirdCornerTime = millis(); //rewrite roundedThirdCornerTime if not extreme case 1
 
       //******
-      while(!irFrontSensorDetect()) //Search for cup
-      {
-        if (deltaFindCupTime + 1000 < getTimeSince(roundedThirdCornerTime)) // the cup is might not be there
-        {
-          cupFound=false;
-          //reverse and realign just to double check that the cup is gone
-          if(deltaFindCupTime>3000)
-          {//## if(too close for a double check)
-            startServosBackward();
-            delay(1000); //reverse 1000
-            stopServos();
-            delay(500);
-            turnPivotBackwardRight();//turn towards the board
-            alignAndTurn();//align
-            //search for another 1500
-            int doubleCheckTime=millis();//save time right after alignment
-            startServosForward();
-            while(getTimeSince(doubleCheckTime)<1500)
-            {//give it a chance to find the cup in 1500ms
-              if(irFrontSensorDetect())
-              {
-                cupFound=true;
-                break;
-              }
-            }
-            break;
-          }
-          else
-          {// end the if statement ## 
-            break;
-          }
-        }
-        delay(IR_DELAY_TIME);
-      }
-      state = MAKE_CUP_CHOICE_STATE;
-      break;
-
-    case MAKE_CUP_CHOICE_STATE:
+      checkForCupGeneralCase();
       if (cupFound) // For case: The cup is still there. Move past obstacle and go home
         state = CUP_FOUND_STATE;
       else
@@ -314,7 +247,7 @@ void loop() {
       state = TERMINATE_STATE;
       break;
 
-    case GO_HOME_STATE:
+    case GO_HOME_PART_A_STATE:
       turnPivotRight();
       alignAndTurn(); //MASON FLAG
       startServosForward(); 
@@ -326,10 +259,13 @@ void loop() {
       }
       stopServos();
       turnPivotLeft();
+      state = GO_HOME_PART_B_STATE;
+      break;
+    case GO_HOME_PART_B_STATE:
       startServosForward(); // return to starting zone
       lastStretchTime = millis();
       //This code uses the front sensors to determine when it has hit the backdrop and is home.
-      while (!whiskerFrontSensorDetect());    //Continue until whisker is triggered
+      while (!whiskerFrontSensorDetect());    //Continue until whisker is triggered. Unique enough not to be moved into a function
       stopServos();
       delay(500);
       startServosBackward();
@@ -442,7 +378,7 @@ void avoidObstacle()
   delay(600);//used to be 1000
   turnPivotRight();
   startServosForward();
-  delay(2000);//used to be 2000
+  delay(2500);//used to be 2000. time to go forward to clear cup
   turnPivotRight();
   startServosForward();
   delay(555);//used to be 800
@@ -754,4 +690,76 @@ int irDetect(int irLedPin, int irReceiverPin, long frequency)
 void setup()
 {
   state = ENTRY_STATE;
+}
+
+void checkForEdgeOfBoard()
+{
+  while (irRightSensorDetect())                                             //Keep going until the board is there.
+  {
+    delay(IR_DELAY_TIME);
+  }     
+}
+
+void checkForExtremeCase1()
+{
+  while (getTimeSince(roundedFirstCornerTime) < 1500)
+  {
+    if(irFrontSensorDetect())
+    {
+      isExtremeCase1 = true;
+      break;
+    }
+    delay(IR_DELAY_TIME);
+  }
+}
+
+void refindCupExtremeCase1()
+{
+  while(!irFrontSensorDetect()) //Search for cup
+  {
+    if (deltaFindCupTime + 1000 < getTimeSince(roundedThirdCornerTime)) // the cup is might not be there
+    {
+      cupFound=false; 
+      break;
+    }     
+  delay(IR_DELAY_TIME);
+  }
+}
+
+void checkForCupGeneralCase()
+{
+  while(!irFrontSensorDetect()) //Search for cup
+  {
+    if (deltaFindCupTime + 1000 < getTimeSince(roundedThirdCornerTime)) // the cup is might not be there
+    {
+      cupFound=false;
+      //reverse and realign just to double check that the cup is gone
+      if(deltaFindCupTime>3000)
+      {//## if(too close for a double check)
+        startServosBackward();
+        delay(1000); //reverse 1000
+        stopServos();
+        delay(500);
+        turnPivotBackwardRight();//turn towards the board
+        alignAndTurn();//align
+        //search for another 1500
+        int doubleCheckTime=millis();//save time right after alignment
+        startServosForward();
+        while(getTimeSince(doubleCheckTime)<1500)
+        {//give it a chance to find the cup in 1500ms
+          if(irFrontSensorDetect())
+          {
+            cupFound=true;
+            break;
+          }
+        }
+        break;
+      }
+      else
+      {// end the if statement ## 
+        break;
+      }
+    }
+    delay(IR_DELAY_TIME);
+  }
 }
